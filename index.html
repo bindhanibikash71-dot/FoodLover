@@ -324,8 +324,7 @@
                         } else {
                             locationValid = false;
                             locDiv.className = 'location-banner loc-error';
-                            locDiv.innerHTML = `<i class="fas fa-times-circle"></i> Sorry, you are ${dist.toFixed(1)}km away. We only deliver within 10km.`;
-                        }
+              }
                     },
                     (error) => {
                         locDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Please enable location to verify delivery availability.`;
@@ -554,7 +553,6 @@
             box.appendChild(toast);
             setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); }, 3000);
         };
-        </script>
+    </script>
 </body>
 </html>
-    
