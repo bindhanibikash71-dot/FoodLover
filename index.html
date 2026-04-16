@@ -2,607 +2,718 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>RAMYASRI FOOD & BEVERAGE · Fine Dining</title>
-    
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Leaflet Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramyasri Food Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        /* RESET & VARIABLES */
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: #fdf8f6; min-height: 100vh; }
-        :root { --crimson: #e53935; --crimson-dark: #ab000d; --crimson-light: #ff6659; --gold: #FFD700; --shadow: 0 4px 12px rgba(0,0,0,0.05); --shadow-lg: 0 20px 35px -8px rgba(0,0,0,0.12); }
-        
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        /* LOCATION CHECK SCREEN */
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        #location-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #fff5f5, #fdf8f6); padding: 20px; }
-        .location-card { background: white; border-radius: 48px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
-        .location-card .icon { font-size: 64px; color: var(--crimson); margin-bottom: 24px; }
-        .location-card h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
-        .location-card p { color: #666; margin-bottom: 24px; }
-        .location-card .distance { font-size: 18px; font-weight: 600; color: var(--crimson); margin: 16px 0; }
-        .btn { padding: 16px 32px; border-radius: 60px; font-weight: 600; border: none; cursor: pointer; font-size: 16px; transition: all 0.2s; }
-        .btn-primary { background: var(--crimson); color: white; }
-        .btn-outline { background: transparent; border: 2px solid var(--crimson); color: var(--crimson); }
-        
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        /* LOGIN SCREEN */
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #fff5f5, #fdf8f6); padding: 20px; }
-        .login-card { background: white; border-radius: 48px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
-        .login-logo { width: 90px; height: 90px; border-radius: 28px; object-fit: cover; margin: 0 auto 28px; display: block; background: var(--crimson); }
-        h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: #1a1a1a; }
-        .google-btn { background: white; border: 2px solid #e0e0e0; border-radius: 60px; padding: 18px 28px; width: 100%; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 14px; cursor: pointer; margin-top: 28px; transition: all 0.2s; }
-        .google-btn:hover { border-color: var(--crimson); background: #fff5f5; }
-        .google-btn i { color: var(--crimson); font-size: 22px; }
-        .guest-btn { margin-top: 16px; color: var(--crimson); font-weight: 600; cursor: pointer; }
-        
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        /* MAIN APP */
-        /* ═══════════════════════════════════════════════════════════════════════════ */
-        #customer-app { display: none; }
-        .app-header { background: white; padding: 16px 20px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-        .header-logo { width: 48px; height: 48px; border-radius: 16px; object-fit: cover; background: var(--crimson); }
-        .container { max-width: 1280px; margin: 0 auto; padding: 16px 20px 100px; }
-        .search-wrapper { background: white; border-radius: 60px; padding: 4px 20px; display: flex; align-items: center; box-shadow: var(--shadow); margin: 20px 0; }
-        .search-wrapper input { border: none; background: transparent; width: 100%; padding: 16px 0; outline: none; font-size: 16px; }
-        .category-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 16px; white-space: nowrap; }
-        .cat-tab { padding: 10px 20px; border-radius: 40px; border: 1.5px solid #ddd; background: white; font-weight: 500; cursor: pointer; }
-        .cat-tab.active { background: var(--crimson); color: white; border-color: var(--crimson); }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        .menu-card { background: white; border-radius: 24px; padding: 16px; box-shadow: var(--shadow); }
-        .menu-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 16px; background: #f0f0f0; }
-        .menu-card h4 { margin-top: 12px; font-weight: 700; }
-        .menu-price { color: var(--crimson); font-weight: 700; }
-        .oos-badge { background: #1e1e1e; color: white; font-size: 11px; padding: 4px 10px; border-radius: 30px; }
-        .add-btn { margin-top: 12px; width: 100%; padding: 12px; background: var(--crimson); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer; }
-        .add-btn:disabled { background: #ccc; cursor: not-allowed; }
-        
-        /* CART BAR */
-        .cart-bar { position: fixed; bottom: 20px; left: 16px; right: 16px; background: white; border-radius: 32px; padding: 16px 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto; z-index: 500; }
-        .cart-icon { background: var(--crimson); width: 44px; height: 44px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; }
-        .cart-count { background: #1e1e1e; color: white; border-radius: 30px; padding: 2px 8px; font-size: 12px; margin-left: 8px; }
-        .cart-total { font-weight: 700; font-size: 18px; }
-        .checkout-btn { background: var(--crimson); color: white; padding: 12px 24px; border-radius: 40px; font-weight: 600; border: none; cursor: pointer; }
-        
-        /* FOOTER */
-        .app-footer { background: white; padding: 30px 20px; margin-top: 40px; text-align: center; border-top: 1px solid #eee; }
-        .social-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
-        .social-link { width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; text-decoration: none; }
-        .social-link.facebook { background: #1877F2; }
-        .social-link.instagram { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4); }
-        
-        /* HELP FLOAT */
-        .help-float { position: fixed; bottom: 100px; right: 20px; background: #25D366; color: white; width: 56px; height: 56px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 20px rgba(37,211,102,0.3); z-index: 400; text-decoration: none; }
-        
-        /* MODALS */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
-        .modal { background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-radius: 36px; padding: 28px 24px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; }
-        .modal h3 { font-size: 22px; margin-bottom: 20px; display: flex; justify-content: space-between; }
-        .modal input, .modal select { width: 100%; padding: 18px; border-radius: 40px; border: 1.5px solid #eee; font-size: 16px; margin-bottom: 12px; background: white; }
-        
-        /* PAYMENT SELECTOR */
-        .payment-option { display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid #eee; border-radius: 20px; margin-bottom: 12px; cursor: pointer; }
-        .payment-option.selected { border-color: var(--crimson); background: #fff5f5; }
-        .payment-option i { font-size: 24px; width: 40px; color: var(--crimson); }
-        
-        /* TRACKING */
-        .progress-track { display: flex; justify-content: space-between; margin: 24px 0; position: relative; }
-        .progress-step { flex: 1; text-align: center; font-size: 13px; color: #aaa; }
-        .progress-step.active { color: var(--crimson); font-weight: 600; }
-        .progress-step i { font-size: 24px; display: block; margin-bottom: 8px; background: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; margin: 0 auto; }
-        .progress-step.active i { background: var(--crimson); color: white; }
-        .map-container { height: 200px; border-radius: 20px; margin: 16px 0; background: #f0f0f0; }
-        
-        /* TOAST */
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: white; padding: 14px 28px; border-radius: 60px; z-index: 9999; opacity: 0; transition: opacity 0.25s; }
-        .toast.show { opacity: 1; }
-        
-        @media (max-width: 480px) { .menu-grid { grid-template-columns: repeat(2, 1fr); } }
+        .loader { border-top-color: #f97316; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden-section { display: none !important; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        #map { height: 300px; width: 100%; border-radius: 0.5rem; z-index: 10; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased pb-24">
 
-<!-- LOCATION CHECK SCREEN -->
-<div id="location-screen">
-    <div class="location-card">
-        <i class="fas fa-map-marker-alt icon"></i>
-        <h2 id="location-title">Checking your location...</h2>
-        <p id="location-message">Please wait while we verify delivery availability</p>
-        <div id="location-distance" class="distance"></div>
-        <button id="location-retry" class="btn btn-primary" style="display:none;" onclick="checkLocation()">Try Again</button>
+    <!-- Loading & Blocking Overlays -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
+        <div class="loader rounded-full border-8 border-gray-200 h-16 w-16 mb-4"></div>
+        <p class="text-lg font-semibold text-gray-700" id="loadingText">Initializing...</p>
     </div>
-</div>
 
-<!-- LOGIN SCREEN -->
-<div id="login-screen" style="display: none;">
-    <div class="login-card">
-        <img id="login-logo" class="login-logo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" alt="RAMYASRI">
-        <h1>RAMYASRI</h1>
-        <p style="color:#666;font-weight:500">FOOD & BEVERAGE LTD</p>
-        <p style="color:#999;font-size:13px;margin-bottom:20px">Fine Dining</p>
-        <button id="google-login-btn" class="google-btn"><i class="fab fa-google"></i>Continue with Google</button>
-        <button id="guest-login-btn" class="guest-btn">Continue as Guest →</button>
+    <div id="blockOverlay" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center hidden-section px-4">
+        <i class="fas fa-store-slash text-6xl text-red-500 mb-4"></i>
+        <h2 class="text-2xl font-bold mb-2 text-center">Service Unavailable</h2>
+        <p class="text-gray-600 mb-6 text-center max-w-md" id="blockMessage"></p>
+        <button onclick="checkLocation()" class="bg-orange-500 text-white px-6 py-2 rounded-full font-bold shadow">Retry Location</button>
     </div>
-</div>
 
-<!-- MAIN APP -->
-<div id="customer-app">
-    <header class="app-header">
-        <div style="display:flex;align-items:center;gap:14px">
-            <img id="header-logo" class="header-logo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" alt="RAMYASRI">
-            <div>
-                <h2 style="font-weight:700;font-size:18px">RAMYASRI</h2>
-                <p style="font-size:11px;color:#666">FOOD & BEVERAGE LTD</p>
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('home')">
+                <img id="storeLogo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" class="h-10 w-10 rounded-full object-cover">
+                <div>
+                    <h1 id="storeName" class="text-xl font-bold text-gray-900 leading-tight">Ramyasri Food</h1>
+                    <p class="text-xs text-green-600 font-semibold" id="storeStatus">● Open Now</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex text-sm bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold">
+                    <i class="fas fa-coins mr-1"></i> <span id="loyaltyPts">0</span> pts
+                </div>
+                <button onclick="switchView('orders')" class="text-gray-600 hover:text-orange-500 text-xl"><i class="fas fa-receipt"></i></button>
+                <button id="authBtn" onclick="handleAuth()" class="bg-orange-500 text-white px-4 py-1.5 rounded-md text-sm font-bold shadow-sm">Login</button>
             </div>
         </div>
-        <div style="display:flex;gap:8px">
-            <button id="history-btn" style="background:#f5f5f5;width:44px;height:44px;border-radius:30px;border:none"><i class="fa-regular fa-clock" style="color:var(--crimson)"></i></button>
-            <button id="logout-btn" style="background:#f5f5f5;width:44px;height:44px;border-radius:30px;border:none"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
-        </div>
-    </header>
+    </nav>
 
-    <div class="container">
-        <div class="search-wrapper">
-            <i class="fa-solid fa-magnifying-glass" style="color:#aaa;margin-right:14px"></i>
-            <input type="text" id="search-input" placeholder="Search dishes..." autocomplete="off">
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- HOME VIEW -->
+        <div id="view-home">
+            <div class="relative mb-6">
+                <input type="text" id="searchInput" placeholder="Search for dishes..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500" oninput="renderMenu()">
+                <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+            <div class="flex overflow-x-auto gap-2 pb-4 hide-scroll" id="categoryTabs"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="menuGrid"></div>
         </div>
-        <div id="category-tabs" class="category-tabs"></div>
-        <div id="menu-grid" class="menu-grid"></div>
+
+        <!-- CART / CHECKOUT VIEW -->
+        <div id="view-cart" class="hidden-section max-w-2xl mx-auto">
+            <div class="flex items-center gap-3 mb-6 cursor-pointer" onclick="switchView('home')"><i class="fas fa-arrow-left"></i> <h2 class="text-2xl font-bold">Checkout</h2></div>
+            
+            <div id="cartItemsList" class="bg-white rounded-xl shadow-sm border p-4 mb-4 space-y-4"></div>
+            
+            <div class="bg-white rounded-xl shadow-sm border p-4 mb-4 space-y-3">
+                <div class="flex gap-2">
+                    <input type="text" id="couponCode" placeholder="Enter Coupon Code" class="flex-1 border rounded-lg px-3 py-2 uppercase">
+                    <button onclick="applyCoupon()" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-semibold">Apply</button>
+                </div>
+                <div id="couponMsg" class="text-sm font-bold hidden-section"></div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="useLoyalty" onchange="updateTotals()">
+                    <label for="useLoyalty">Use <span id="checkoutLoyaltyPts">0</span> points (Discount: ₹<span id="loyaltyValue">0</span>)</label>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border p-4 mb-4 text-sm space-y-2">
+                <div class="flex justify-between"><span>Subtotal</span> <span id="cartSubtotal">₹0</span></div>
+                <div class="flex justify-between"><span>Delivery Fee</span> <span id="cartDelivery">₹0</span></div>
+                <div class="flex justify-between"><span>Taxes & Packaging</span> <span id="cartTax">₹0</span></div>
+                <div class="flex justify-between text-green-600 hidden-section font-semibold" id="discountRow"><span>Discount</span> <span id="cartDiscount">-₹0</span></div>
+                <hr class="my-2">
+                <div class="flex justify-between font-bold text-lg text-gray-900"><span>Total</span> <span id="cartTotal">₹0</span></div>
+            </div>
+
+            <form id="checkoutForm" onsubmit="placeOrder(event)" class="bg-white rounded-xl shadow-sm border p-4 mb-6">
+                <h3 class="font-bold mb-3 text-lg">Delivery Details</h3>
+                <input type="text" id="custName" placeholder="Full Name" class="w-full border rounded-lg px-3 py-2.5 mb-3" required>
+                <input type="tel" id="custPhone" placeholder="Phone Number" class="w-full border rounded-lg px-3 py-2.5 mb-3" required>
+                <textarea id="custAddress" placeholder="Complete Delivery Address" class="w-full border rounded-lg px-3 py-2.5 mb-4" rows="2" required></textarea>
+                
+                <h3 class="font-bold mb-3 text-lg">Payment Method</h3>
+                <select id="paymentMethod" class="w-full border rounded-lg px-3 py-2.5 mb-4 bg-gray-50 font-semibold" onchange="toggleUPI()">
+                    <option value="COD">Cash on Delivery</option>
+                    <option value="UPI">UPI Payment</option>
+                    <option value="Restaurant">Pay at Restaurant</option>
+                </select>
+
+                <div id="upiSection" class="hidden-section bg-blue-50 p-4 rounded-lg text-center mb-4 border border-blue-100">
+                    <p class="font-bold text-blue-900 mb-2">Scan to Pay via UPI</p>
+                    <img id="upiQrCode" src="" class="mx-auto h-40 w-40 object-cover mb-2 border rounded bg-white">
+                    <p class="text-sm font-mono text-gray-700 bg-white inline-block px-3 py-1 rounded border">UPI ID: <span id="upiIdDisplay"></span></p>
+                </div>
+
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl shadow-md transition text-lg flex justify-center items-center gap-2">
+                    Place Order <i class="fas fa-check-circle"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- ORDERS HISTORY -->
+        <div id="view-orders" class="hidden-section max-w-3xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">My Orders</h2>
+            <div id="ordersList" class="space-y-4"></div>
+        </div>
+
+        <!-- ORDER TRACKING -->
+        <div id="view-tracking" class="hidden-section max-w-2xl mx-auto">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('orders')"><i class="fas fa-arrow-left"></i> <h2 class="text-xl font-bold">Track Order #<span id="trackOrderId"></span></h2></div>
+                <span id="trackStatusBadge" class="px-3 py-1 rounded-full text-sm font-bold text-white bg-blue-500">Placed</span>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border p-4 mb-4 relative overflow-hidden">
+                <div class="flex justify-between mb-2 relative z-10">
+                    <div class="text-center w-1/4"><div class="w-8 h-8 mx-auto rounded-full bg-green-500 text-white flex items-center justify-center mb-1"><i class="fas fa-check text-xs"></i></div><span class="text-xs font-bold">Placed</span></div>
+                    <div class="text-center w-1/4"><div id="stepPrep" class="w-8 h-8 mx-auto rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mb-1"><i class="fas fa-fire text-xs"></i></div><span class="text-xs font-bold">Preparing</span></div>
+                    <div class="text-center w-1/4"><div id="stepOut" class="w-8 h-8 mx-auto rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mb-1"><i class="fas fa-motorcycle text-xs"></i></div><span class="text-xs font-bold">On Way</span></div>
+                    <div class="text-center w-1/4"><div id="stepDel" class="w-8 h-8 mx-auto rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mb-1"><i class="fas fa-home text-xs"></i></div><span class="text-xs font-bold">Delivered</span></div>
+                </div>
+                <p class="text-center font-semibold text-gray-600 mt-4">Estimated Delivery: <span id="trackETA" class="text-orange-500">-- mins</span></p>
+            </div>
+
+            <div id="map" class="mb-4 border shadow-sm"></div>
+
+            <div id="partnerInfo" class="hidden-section bg-white rounded-xl shadow-sm border p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl text-gray-500"><i class="fas fa-user"></i></div>
+                    <div>
+                        <h4 class="font-bold" id="partnerName">Partner</h4>
+                        <p class="text-xs text-gray-500"><i class="fas fa-star text-yellow-400"></i> 4.8 • <span id="partnerVehicle">Vehicle</span></p>
+                    </div>
+                </div>
+                <a id="partnerCall" href="#" class="bg-green-100 text-green-600 w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-phone"></i></a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Floating Cart Banner -->
+    <div id="floatingCart" class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 hidden-section z-40 transition-transform transform translate-y-full">
+        <div class="max-w-7xl mx-auto flex justify-between items-center cursor-pointer" onclick="switchView('cart')">
+            <div>
+                <p class="text-sm text-gray-500 font-semibold"><span id="floatCount">0</span> Items</p>
+                <p class="text-lg font-bold text-gray-900">₹<span id="floatTotal">0</span></p>
+            </div>
+            <button class="bg-orange-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 flex items-center gap-2">
+                View Cart <i class="fas fa-shopping-bag"></i>
+            </button>
+        </div>
     </div>
 
-    <footer class="app-footer">
-        <div class="social-links" id="social-links-container"></div>
-        <p style="color:#999;font-size:13px">
-            © 2024 RAMYASRI FOOD & BEVERAGE LTD<br>
-            <a href="tel:+918341312204" style="color:var(--crimson)">+91 83413 12204</a> | 
-            <span id="store-hours"></span>
-        </p>
+    <!-- Floating WhatsApp -->
+    <a href="https://wa.me/918341312204" target="_blank" class="fixed bottom-24 right-4 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-lg hover:bg-green-600 z-30">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12 hidden-section" id="footer">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h3 class="font-bold text-xl mb-4">Ramyasri Food & Beverage</h3>
+            <p class="text-gray-400 text-sm mb-4">📍 Plot No 12, Hyderabad<br>📞 +91 83413 12204</p>
+            <div class="flex justify-center gap-4 text-2xl mb-6">
+                <a href="#" class="hover:text-orange-500 transition"><i class="fab fa-facebook"></i></a>
+                <a href="#" class="hover:text-orange-500 transition"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="hover:text-orange-500 transition"><i class="fab fa-twitter"></i></a>
+            </div>
+            <p class="text-xs text-gray-500">© 2026 Ramyasri Food & Beverage Ltd. All rights reserved.</p>
+        </div>
     </footer>
 
-    <div id="cart-bar" class="cart-bar">
-        <div style="display:flex;align-items:center;gap:12px">
-            <div class="cart-icon"><i class="fa-solid fa-bag-shopping"></i></div>
-            <div><span style="font-weight:600">Cart</span><span id="cart-count" class="cart-count">0</span></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px">
-            <span id="cart-total" class="cart-total">₹0</span>
-            <button id="checkout-btn" class="checkout-btn">Checkout →</button>
-        </div>
-    </div>
-
-    <a href="https://wa.me/918341312204" class="help-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
-</div>
-
-<!-- CART MODAL -->
-<div class="modal-overlay" id="cart-modal">
-    <div class="modal">
-        <h3>Your Order <button onclick="closeCartModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
-        <div id="cart-items-list" style="max-height:200px;overflow-y:auto"></div>
-        <input type="text" id="customer-name" placeholder="Full Name">
-        <input type="tel" id="customer-phone" placeholder="Phone Number *">
-        <input type="text" id="customer-address" placeholder="Delivery Address *">
-        
-        <h4 style="margin:16px 0 12px">Payment Method</h4>
-        <div class="payment-option selected" id="payment-cod" onclick="selectPayment('cod')">
-            <i class="fa-solid fa-money-bill"></i>
-            <div><strong>Cash on Delivery</strong><br><small>Pay when you receive</small></div>
-        </div>
-        <div class="payment-option" id="payment-upi" onclick="selectPayment('upi')">
-            <i class="fa-solid fa-mobile-screen"></i>
-            <div><strong>UPI Payment</strong><br><small>Google Pay / PhonePe / Paytm</small></div>
-        </div>
-        <div id="upi-details" style="display:none;padding:16px;background:#f5f5f5;border-radius:20px;margin:12px 0">
-            <p><strong>UPI ID:</strong> <span id="upi-id-display">8341312204@ybl</span></p>
-            <p><strong>Payee:</strong> RAMYASRI FOOD</p>
-            <button class="checkout-btn" onclick="openUPIApp()">Pay via UPI App</button>
-        </div>
-        
-        <button class="checkout-btn" onclick="placeOrder()" style="margin-top:16px">Place Order · <span id="final-amount">₹0</span></button>
-    </div>
-</div>
-
-<!-- TRACKING MODAL -->
-<div class="modal-overlay" id="tracking-modal">
-    <div class="modal">
-        <h3>Live Tracking <button onclick="closeTrackingModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
-        <p><strong>Order #<span id="tracking-order-id"></span></strong> · <span id="estimated-time">25-35 mins</span></p>
-        <div id="tracking-progress"></div>
-        <div id="timeline-container"></div>
-        <div id="delivery-partner-card" style="background:#f5f5f5;border-radius:20px;padding:16px;margin:16px 0"></div>
-        <div id="tracking-map" class="map-container"></div>
-        <button class="checkout-btn" onclick="callDeliveryPartner()"><i class="fa-solid fa-phone"></i> Call Delivery Partner</button>
-    </div>
-</div>
-
-<!-- HISTORY MODAL -->
-<div class="modal-overlay" id="history-modal">
-    <div class="modal">
-        <h3>Order History <button onclick="closeHistoryModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
-        <div id="history-list"></div>
-    </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
-    // ═══════════════════════════════════════════════════════════════════════════
-    // FIREBASE CONFIG
-    // ═══════════════════════════════════════════════════════════════════════════
-    const firebaseConfig = {
-        apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
-        authDomain: "myfood-7ebe7.firebaseapp.com",
-        databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
-        projectId: "myfood-7ebe7",
-        storageBucket: "myfood-7ebe7.firebasestorage.app",
-        messagingSenderId: "144461701384",
-        appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GLOBAL VARIABLES
-    // ═══════════════════════════════════════════════════════════════════════════
-    const RESTAURANT = { lat: 17.442120, lng: 78.377530, radius: 10 };
-    const DEFAULT_LOGO = 'https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg';
-    const OWNER_PHONE = '+918341312204';
-    
-    let currentUser = null;
-    let cart = {};
-    let menuData = {};
-    let currentCategory = 'All';
-    let trackingOrderId = null;
-    let trackingMap = null;
-    let selectedPayment = 'cod';
-    let userLocation = null;
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // UTILITY FUNCTIONS
-    // ═══════════════════════════════════════════════════════════════════════════
-    function showToast(msg, isError = false) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.style.background = isError ? '#d32f2f' : '#1e1e1e';
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3000);
-    }
-    
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // LOCATION CHECK
-    // ═══════════════════════════════════════════════════════════════════════════
-    function checkLocation() {
-        const screen = document.getElementById('location-screen');
-        const title = document.getElementById('location-title');
-        const msg = document.getElementById('location-message');
-        const distanceDiv = document.getElementById('location-distance');
-        const retryBtn = document.getElementById('location-retry');
-        
-        if (!navigator.geolocation) {
-            title.textContent = 'Location Not Supported';
-            msg.textContent = 'Your browser does not support geolocation';
-            retryBtn.style.display = 'block';
-            return;
-        }
-        
-        title.textContent = 'Checking your location...';
-        msg.textContent = 'Please wait while we verify delivery availability';
-        
-        navigator.geolocation.getCurrentPosition((pos) => {
-            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            const distance = calculateDistance(RESTAURANT.lat, RESTAURANT.lng, userLocation.lat, userLocation.lng);
-            
-            if (distance <= RESTAURANT.radius) {
-                sessionStorage.setItem('locationVerified', 'true');
-                screen.style.display = 'none';
-                document.getElementById('login-screen').style.display = 'flex';
-            } else {
-                title.textContent = '📍 Outside Delivery Area';
-                msg.textContent = `Sorry! We don't deliver to your location yet.`;
-                distanceDiv.textContent = `You are ${distance.toFixed(1)} km away (Max: ${RESTAURANT.radius} km)`;
-                retryBtn.style.display = 'block';
-            }
-        }, (err) => {
-            title.textContent = 'Location Required';
-            msg.textContent = 'Please enable location to check delivery availability';
-            retryBtn.style.display = 'block';
-        });
-    }
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // AUTHENTICATION
-    // ═══════════════════════════════════════════════════════════════════════════
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('customer-app').style.display = 'block';
-            initApp();
-        }
-    });
-    
-    document.getElementById('google-login-btn').onclick = () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(() => auth.signInWithRedirect(provider));
-    };
-    
-    document.getElementById('guest-login-btn').onclick = () => {
-        currentUser = { uid: 'guest_' + Date.now(), displayName: 'Guest', isGuest: true };
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('customer-app').style.display = 'block';
-        initApp();
-    };
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INIT APP
-    // ═══════════════════════════════════════════════════════════════════════════
-    function initApp() {
-        loadSettings();
-        loadMenu();
-        loadCart();
-        document.getElementById('logout-btn').onclick = () => auth.signOut();
-        document.getElementById('history-btn').onclick = showHistory;
-        document.getElementById('checkout-btn').onclick = openCart;
-        document.getElementById('search-input').addEventListener('input', filterMenu);
-    }
-    
-    function loadSettings() {
-        db.ref('settings').on('value', snap => {
-            const s = snap.val() || {};
-            const logo = s.logo?.main || DEFAULT_LOGO;
-            document.getElementById('login-logo').src = logo;
-            document.getElementById('header-logo').src = logo;
-            
-            if (s.social) {
-                let html = '';
-                if (s.social.facebook) html += `<a href="${s.social.facebook}" target="_blank" class="social-link facebook"><i class="fab fa-facebook-f"></i></a>`;
-                if (s.social.instagram) html += `<a href="${s.social.instagram}" target="_blank" class="social-link instagram"><i class="fab fa-instagram"></i></a>`;
-                document.getElementById('social-links-container').innerHTML = html || '<p style="color:#999">Follow us</p>';
-            }
-            
-            if (s.store?.hours) {
-                document.getElementById('store-hours').textContent = `${s.store.hours.open || '10:00'} - ${s.store.hours.close || '22:00'}`;
-            }
-            
-            if (s.payment?.upi?.primaryId) {
-                document.getElementById('upi-id-display').textContent = s.payment.upi.primaryId;
-            }
-        });
-    }
-    
-    function loadMenu() {
-        db.ref('menu').on('value', snap => {
-            menuData = snap.val() || {};
-            renderMenu();
-        });
-    }
-    
-    function renderMenu() {
-        const items = Object.entries(menuData);
-        const cats = ['All', ...new Set(items.map(([id, i]) => i.category))];
-        document.getElementById('category-tabs').innerHTML = cats.map(c => 
-            `<button class="cat-tab ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
-        ).join('');
-        filterItems();
-    }
-    
-    window.setCategory = cat => { currentCategory = cat; renderMenu(); };
-    
-    function filterItems() {
-        const q = document.getElementById('search-input').value.toLowerCase();
-        let items = Object.entries(menuData);
-        if (currentCategory !== 'All') items = items.filter(([id, i]) => i.category === currentCategory);
-        if (q) items = items.filter(([id, i]) => i.name.toLowerCase().includes(q));
-        
-        const grid = document.getElementById('menu-grid');
-        grid.innerHTML = items.length ? items.map(([id, i]) => `
-            <div class="menu-card">
-                <img src="${i.image || DEFAULT_LOGO}" class="menu-img" onerror="this.src='${DEFAULT_LOGO}'">
-                <h4>${i.name}</h4>
-                <p class="menu-price">₹${i.price}</p>
-                ${!i.inStock ? '<span class="oos-badge">Out of Stock</span>' : ''}
-                <button class="add-btn" onclick="addToCart('${id}','${i.name}',${i.price})" ${!i.inStock ? 'disabled' : ''}>Add</button>
-            </div>
-        `).join('') : '<p style="grid-column:1/-1;text-align:center;padding:40px">No items</p>';
-    }
-    
-    function filterMenu() { filterItems(); }
-    
-    window.addToCart = (id, name, price) => {
-        if (cart[id]) cart[id].qty++;
-        else cart[id] = { name, price, qty: 1 };
-        db.ref(`carts/${currentUser.uid}`).set(cart);
-        showToast(`✓ ${name} added`);
-    };
-    
-    function loadCart() {
-        db.ref(`carts/${currentUser.uid}`).on('value', snap => {
-            cart = snap.val() || {};
-            updateCartUI();
-        });
-    }
-    
-    function updateCartUI() {
-        const items = Object.values(cart);
-        const total = items.reduce((s, i) => s + (i.price * i.qty), 0);
-        document.getElementById('cart-total').textContent = `₹${total.toLocaleString('en-IN')}`;
-        document.getElementById('cart-count').textContent = items.reduce((s, i) => s + i.qty, 0);
-    }
-    
-    function openCart() {
-        if (!Object.keys(cart).length) { showToast('Cart empty', true); return; }
-        const items = Object.entries(cart);
-        const total = items.reduce((s, [id, i]) => s + (i.price * i.qty), 0);
-        document.getElementById('cart-items-list').innerHTML = items.map(([id, i]) => `
-            <div style="display:flex;justify-content:space-between;padding:8px 0">
-                <span>${i.name} × ${i.qty}</span>
-                <span>₹${(i.price * i.qty).toLocaleString('en-IN')}</span>
-            </div>
-        `).join('');
-        document.getElementById('final-amount').textContent = `₹${total.toLocaleString('en-IN')}`;
-        document.getElementById('cart-modal').style.display = 'flex';
-    }
-    
-    window.closeCartModal = () => document.getElementById('cart-modal').style.display = 'none';
-    
-    window.selectPayment = method => {
-        selectedPayment = method;
-        document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
-        document.getElementById(`payment-${method}`).classList.add('selected');
-        document.getElementById('upi-details').style.display = method === 'upi' ? 'block' : 'none';
-    };
-    
-    window.openUPIApp = () => {
-        const upiId = document.getElementById('upi-id-display').textContent;
-        const amount = Object.values(cart).reduce((s, i) => s + (i.price * i.qty), 0);
-        window.location.href = `upi://pay?pa=${upiId}&pn=RAMYASRI&am=${amount}&cu=INR`;
-    };
-    
-    window.placeOrder = () => {
-        const name = document.getElementById('customer-name').value.trim();
-        const phone = document.getElementById('customer-phone').value.trim();
-        const address = document.getElementById('customer-address').value.trim();
-        
-        if (!phone || !address) { showToast('Phone and Address required', true); return; }
-        
-        const items = Object.entries(cart);
-        const subtotal = items.reduce((s, [id, i]) => s + (i.price * i.qty), 0);
-        const delivery = 40;
-        const total = subtotal + delivery;
-        
-        const order = {
-            customer: { id: currentUser.uid, name: name || 'Guest', phone, email: currentUser.email || '' },
-            deliveryAddress: { full: address, lat: userLocation?.lat || null, lng: userLocation?.lng || null },
-            items: cart,
-            payment: { method: selectedPayment, status: selectedPayment === 'cod' ? 'pending' : 'pending' },
-            charges: { subtotal, delivery, total },
-            status: 'Placed',
-            statusHistory: [{ status: 'Placed', timestamp: Date.now() }],
-            timestamps: { placed: Date.now() },
-            estimatedDeliveryTime: '25-35 minutes'
+    <script>
+        // EXACT Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
+            authDomain: "myfood-7ebe7.firebaseapp.com",
+            databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
+            projectId: "myfood-7ebe7",
+            storageBucket: "myfood-7ebe7.firebasestorage.app",
+            messagingSenderId: "144461701384",
+            appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
         };
-        
-        db.ref('orders').push(order).then(() => {
-            db.ref(`carts/${currentUser.uid}`).remove();
-            closeCartModal();
-            showToast('🎉 Order Placed!');
-            document.getElementById('customer-name').value = '';
-            document.getElementById('customer-phone').value = '';
-            document.getElementById('customer-address').value = '';
-        });
-    };
-    
-    function showHistory() {
-        db.ref('orders').orderByChild('customer/id').equalTo(currentUser.uid).on('value', snap => {
-            const orders = snap.val();
-            const list = document.getElementById('history-list');
-            if (!orders) { list.innerHTML = '<p>No orders</p>'; return; }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // App State
+        const RESTAURANT_LOC = { lat: 17.442120, lng: 78.377530 };
+        const DEFAULT_LOGO = "https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg";
+        let userLocation = null;
+        let currentUser = null;
+        let menuItems =[];
+        let categories = new Set();
+        let currentCategory = 'All';
+        let cartData = {};
+        let storeSettings = { minOrder: 0, deliveryCharge: 50, freeThreshold: 500, taxPercent: 5 };
+        let activeCoupon = null;
+        let mapInstance = null, mapMarkers = {};
+
+        // 1. LOCATION CHECK (Haversine Formula)
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const p = 0.017453292519943295;
+            const c = Math.cos;
+            const a = 0.5 - c((lat2 - lat1) * p)/2 + c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p))/2;
+            return 12742 * Math.asin(Math.sqrt(a)); 
+        }
+
+        function checkLocation() {
+            document.getElementById('loadingOverlay').classList.remove('hidden-section');
+            document.getElementById('blockOverlay').classList.add('hidden-section');
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    const dist = getDistance(RESTAURANT_LOC.lat, RESTAURANT_LOC.lng, userLocation.lat, userLocation.lng);
+                    if(dist > 10) {
+                        document.getElementById('loadingOverlay').classList.add('hidden-section');
+                        const block = document.getElementById('blockOverlay');
+                        document.getElementById('blockMessage').innerText = `You are ${dist.toFixed(1)} km away. We only deliver within 10 km of the restaurant.`;
+                        block.classList.remove('hidden-section');
+                    } else {
+                        initializeApp();
+                    }
+                }, (err) => {
+                    alert("Location access needed for delivery calculation. Falling back to default location.");
+                    userLocation = {lat: 17.44, lng: 78.38}; // Mock near loc
+                    initializeApp();
+                }, {enableHighAccuracy: true});
+            } else {
+                alert("Geolocation not supported.");
+            }
+        }
+
+        // 2. INITIALIZATION
+        async function initializeApp() {
+            document.getElementById('loadingText').innerText = "Loading Menu...";
             
-            list.innerHTML = Object.entries(orders).reverse().map(([id, o]) => `
-                <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px">
-                    <div style="display:flex;justify-content:space-between">
-                        <strong>#${id.slice(-6)}</strong>
-                        <span>₹${(o.charges?.total || 0).toLocaleString('en-IN')}</span>
-                    </div>
-                    <p>${o.status || 'Placed'}</p>
-                    <button onclick="trackOrder('${id}')" style="background:var(--crimson);color:white;border:none;padding:8px 16px;border-radius:20px;margin-top:8px">Track</button>
-                </div>
-            `).join('');
+            // Fetch Settings
+            db.ref('settings').on('value', snap => {
+                const data = snap.val() || {};
+                if(data.general) document.getElementById('storeName').innerText = data.general.restaurantName || "Ramyasri Food";
+                if(data.logo && data.logo.main) document.getElementById('storeLogo').src = data.logo.main;
+                if(data.store) {
+                    storeSettings.minOrder = data.store.minOrder || 0;
+                    storeSettings.deliveryCharge = data.store.deliveryCharge || 50;
+                    storeSettings.freeThreshold = data.store.freeDeliveryThreshold || 500;
+                    storeSettings.taxPercent = (data.store.gst?.percentage || 5);
+                }
+                if(data.payment && data.payment.upi) {
+                    document.getElementById('upiIdDisplay').innerText = data.payment.upi.primaryId || "8341312204@ybl";
+                    document.getElementById('upiQrCode').src = data.payment.upi.qrCodeUrl || "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; // Mock QR
+                }
+            });
+
+            // Auth State
+            auth.onAuthStateChanged(user => {
+                if(user) {
+                    currentUser = user;
+                    document.getElementById('authBtn').innerText = "Logout";
+                    document.getElementById('authBtn').onclick = () => auth.signOut();
+                    
+                    // User Profile & Points
+                    db.ref(`customers/${user.uid}/loyalty`).on('value', s => {
+                        const pts = s.val()?.points || 0;
+                        document.getElementById('loyaltyPts').innerText = pts;
+                        document.getElementById('checkoutLoyaltyPts').innerText = pts;
+                        document.getElementById('loyaltyValue').innerText = (pts/10).toFixed(2);
+                    });
+                    
+                    // Sync Cart
+                    db.ref(`carts/${user.uid}`).on('value', s => {
+                        cartData = s.val() || {};
+                        updateCartUI();
+                    });
+                } else {
+                    currentUser = null;
+                    document.getElementById('authBtn').innerText = "Login";
+                    document.getElementById('authBtn').onclick = handleAuth;
+                    document.getElementById('loyaltyPts').innerText = "0";
+                    // Guest Cart from localStorage
+                    cartData = JSON.parse(localStorage.getItem('guestCart')) || {};
+                    updateCartUI();
+                }
+            });
+
+            // Fetch Menu
+            db.ref('menu/items').on('value', snap => {
+                menuItems =[];
+                categories.clear();
+                categories.add('All');
+                snap.forEach(child => {
+                    let item = child.val();
+                    item.id = child.key;
+                    menuItems.push(item);
+                    if(item.categoryId) categories.add(item.categoryId);
+                });
+                renderCategories();
+                renderMenu();
+                document.getElementById('loadingOverlay').classList.add('hidden-section');
+                document.getElementById('footer').classList.remove('hidden-section');
+            });
+        }
+
+        function handleAuth() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(err => alert("Auth Error: " + err.message));
+        }
+
+        // 3. UI RENDERING & SEARCH
+        function switchView(view) {['home', 'cart', 'orders', 'tracking'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden-section');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden-section');
+            window.scrollTo(0, 0);
             
-            document.getElementById('history-modal').style.display = 'flex';
-        });
-    }
-    
-    window.trackOrder = id => {
-        trackingOrderId = id;
-        document.getElementById('tracking-order-id').textContent = id.slice(-6);
-        
-        db.ref(`orders/${id}`).on('value', snap => {
-            const o = snap.val();
-            if (!o) return;
+            if(view === 'orders') loadOrderHistory();
+            if(view !== 'cart') document.getElementById('floatingCart').style.transform = Object.keys(cartData).length ? 'translateY(0)' : 'translateY(100%)';
+            else document.getElementById('floatingCart').style.transform = 'translateY(100%)';
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoryTabs');
+            container.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold border ${currentCategory === cat ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200'}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentCategory = cat; renderCategories(); renderMenu(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderMenu() {
+            const grid = document.getElementById('menuGrid');
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            grid.innerHTML = '';
             
-            const steps = ['Placed', 'Confirmed', 'Preparing', 'Ready', 'OutForDelivery', 'Delivered'];
-            const currentIdx = steps.indexOf(o.status);
-            
-            document.getElementById('tracking-progress').innerHTML = `
-                <div class="progress-track">
-                    ${steps.map((s, i) => `
-                        <div class="progress-step ${i <= currentIdx ? 'active' : ''}">
-                            <i class="fa-solid fa-${i===0?'check':i===1?'check-double':i===2?'fire':i===3?'box':i===4?'truck':'flag-checkered'}"></i>
-                            ${s}
+            let filtered = menuItems.filter(item => 
+                (currentCategory === 'All' || item.categoryId === currentCategory) &&
+                item.name.toLowerCase().includes(term)
+            );
+
+            if(filtered.length === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10">No items found.</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const qty = cartData[item.id]?.qty || 0;
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col">
+                        <div class="relative w-full h-40 mb-3 rounded-xl overflow-hidden bg-gray-100">
+                            <img src="${item.image || DEFAULT_LOGO}" class="w-full h-full object-cover" onerror="this.src='${DEFAULT_LOGO}'">
+                            ${!item.inStock ? `<div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"><span class="text-white font-bold bg-red-600 px-3 py-1 rounded">Out of Stock</span></div>` : ''}
+                            <div class="absolute top-2 right-2 ${item.veg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs font-bold px-2 py-0.5 rounded border ${item.veg ? 'border-green-500' : 'border-red-500'} flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full ${item.veg ? 'bg-green-500' : 'bg-red-500'}"></div>
+                                ${item.veg ? 'VEG' : 'NON-VEG'}
+                            </div>
                         </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            if (o.deliveryPartner) {
-                document.getElementById('delivery-partner-card').innerHTML = `
-                    <strong>${o.deliveryPartner.name}</strong> · ⭐ ${o.deliveryPartner.rating || '4.5'}<br>
-                    📞 ${o.deliveryPartner.phone}<br>
-                    🛵 ${o.deliveryPartner.vehicle || 'Bike'}
+                        <h3 class="font-bold text-gray-900 text-lg line-clamp-1">${item.name}</h3>
+                        <p class="text-xs text-gray-500 mb-2">${item.categoryId}</p>
+                        <div class="mt-auto flex items-center justify-between">
+                            <span class="font-bold text-lg">₹${item.price}</span>
+                            ${item.inStock ? 
+                                (qty > 0 ? 
+                                `<div class="flex items-center gap-3 bg-orange-100 rounded-lg px-2 py-1">
+                                    <button onclick="updateCart('${item.id}', -1)" class="text-orange-600 font-bold w-6 h-6 flex items-center justify-center">-</button>
+                                    <span class="font-bold">${qty}</span>
+                                    <button onclick="updateCart('${item.id}', 1)" class="text-orange-600 font-bold w-6 h-6 flex items-center justify-center">+</button>
+                                </div>` 
+                                : 
+                                `<button onclick="updateCart('${item.id}', 1)" class="bg-orange-100 text-orange-600 hover:bg-orange-500 hover:text-white transition px-4 py-1.5 rounded-lg font-bold text-sm">ADD</button>`
+                                ) : ''
+                            }
+                        </div>
+                    </div>
                 `;
+            });
+        }
+
+        // 4. CART & CHECKOUT
+        function updateCart(itemId, change) {
+            const item = menuItems.find(i => i.id === itemId);
+            if(!item) return;
+
+            if(!cartData[itemId]) {
+                cartData[itemId] = { id: itemId, name: item.name, price: item.price, image: item.image, qty: 0 };
             }
             
-            if (o.status === 'OutForDelivery' && o.deliveryPartner?.currentLocation) {
-                setTimeout(() => initTrackingMap(o.deliveryPartner.currentLocation), 100);
+            cartData[itemId].qty += change;
+            if(cartData[itemId].qty <= 0) delete cartData[itemId];
+
+            if(currentUser) {
+                db.ref(`carts/${currentUser.uid}`).set(cartData);
+            } else {
+                localStorage.setItem('guestCart', JSON.stringify(cartData));
+                updateCartUI();
             }
-        });
-        
-        closeHistoryModal();
-        document.getElementById('tracking-modal').style.display = 'flex';
-    };
-    
-    function initTrackingMap(partnerLoc) {
-        if (trackingMap) { trackingMap.remove(); trackingMap = null; }
-        const mapDiv = document.getElementById('tracking-map');
-        trackingMap = L.map(mapDiv).setView([RESTAURANT.lat, RESTAURANT.lng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackingMap);
-        L.marker([RESTAURANT.lat, RESTAURANT.lng]).addTo(trackingMap).bindPopup('Restaurant');
-        if (userLocation) L.marker([userLocation.lat, userLocation.lng]).addTo(trackingMap).bindPopup('You');
-        if (partnerLoc) L.marker([partnerLoc.lat, partnerLoc.lng]).addTo(trackingMap).bindPopup('Delivery Partner');
-    }
-    
-    window.callDeliveryPartner = () => {
-        db.ref(`orders/${trackingOrderId}/deliveryPartner`).once('value', snap => {
-            const p = snap.val();
-            if (p?.phone) window.location.href = `tel:${p.phone}`;
-            else showToast('No partner assigned', true);
-        });
-    };
-    
-    window.closeTrackingModal = () => document.getElementById('tracking-modal').style.display = 'none';
-    window.closeHistoryModal = () => document.getElementById('history-modal').style.display = 'none';
-    
-    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; }));
-    
-    // START
-    checkLocation();
-</script>
+            renderMenu();
+        }
+
+        function updateCartUI() {
+            let total = 0, count = 0;
+            const list = document.getElementById('cartItemsList');
+            list.innerHTML = '';
+
+            Object.values(cartData).forEach(item => {
+                total += item.price * item.qty;
+                count += item.qty;
+                list.innerHTML += `
+                    <div class="flex items-center gap-3">
+                        <img src="${item.image || DEFAULT_LOGO}" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-sm line-clamp-1">${item.name}</h4>
+                            <p class="text-xs text-gray-500">₹${item.price} x ${item.qty}</p>
+                        </div>
+                        <span class="font-bold text-sm">₹${item.price * item.qty}</span>
+                        <button onclick="updateCart('${item.id}', -${item.qty})" class="text-red-500 bg-red-50 p-2 rounded"><i class="fas fa-trash text-xs"></i></button>
+                    </div>
+                `;
+            });
+
+            if(count === 0) list.innerHTML = '<p class="text-center text-gray-500 py-4">Your cart is empty.</p>';
+
+            document.getElementById('floatCount').innerText = count;
+            document.getElementById('floatTotal').innerText = total;
+            document.getElementById('floatingCart').classList.remove('hidden-section');
+            if(count === 0 || document.getElementById('view-cart').classList.contains('hidden-section') === false) {
+                document.getElementById('floatingCart').style.transform = 'translateY(100%)';
+            } else {
+                document.getElementById('floatingCart').style.transform = 'translateY(0)';
+            }
+            
+            updateTotals();
+        }
+
+        async function applyCoupon() {
+            const code = document.getElementById('couponCode').value.toUpperCase();
+            if(!code) return;
+            const snap = await db.ref(`coupons/${code}`).once('value');
+            const coupon = snap.val();
+            const msg = document.getElementById('couponMsg');
+            msg.classList.remove('hidden-section');
+            
+            let subtotal = Object.values(cartData).reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+            if(coupon && coupon.active && subtotal >= coupon.minOrder) {
+                activeCoupon = coupon;
+                activeCoupon.code = code;
+                msg.innerText = `Coupon applied successfully!`;
+                msg.className = "text-sm font-bold text-green-600";
+            } else {
+                activeCoupon = null;
+                msg.innerText = "Invalid coupon or min order not met.";
+                msg.className = "text-sm font-bold text-red-600";
+            }
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let subtotal = Object.values(cartData).reduce((sum, i) => sum + (i.price * i.qty), 0);
+            let delivery = subtotal >= storeSettings.freeThreshold ? 0 : storeSettings.deliveryCharge;
+            let tax = (subtotal * storeSettings.taxPercent) / 100;
+            let discount = 0;
+
+            if(activeCoupon) {
+                if(activeCoupon.type === 'percent') discount = (subtotal * activeCoupon.value) / 100;
+                else discount = activeCoupon.value;
+                if(activeCoupon.maxDiscount && discount > activeCoupon.maxDiscount) discount = activeCoupon.maxDiscount;
+            }
+
+            // Loyalty usage
+            const useLoyalty = document.getElementById('useLoyalty').checked;
+            const pts = parseInt(document.getElementById('checkoutLoyaltyPts').innerText) || 0;
+            if(useLoyalty && pts > 0) {
+                discount += (pts / 10);
+            }
+
+            let total = subtotal + delivery + tax - discount;
+
+            document.getElementById('cartSubtotal').innerText = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('cartDelivery').innerText = `₹${delivery}`;
+            document.getElementById('cartTax').innerText = `₹${tax.toFixed(2)}`;
+            if(discount > 0) {
+                document.getElementById('discountRow').classList.remove('hidden-section');
+                document.getElementById('cartDiscount').innerText = `-₹${discount.toFixed(2)}`;
+            } else {
+                document.getElementById('discountRow').classList.add('hidden-section');
+            }
+            document.getElementById('cartTotal').innerText = `₹${Math.max(0, total).toFixed(2)}`;
+            
+            // Sync user details to form if logged in
+            if(currentUser && document.getElementById('custName').value === '') {
+                document.getElementById('custName').value = currentUser.displayName || '';
+                document.getElementById('custPhone').value = currentUser.phoneNumber || '';
+            }
+        }
+
+        function toggleUPI() {
+            const method = document.getElementById('paymentMethod').value;
+            const upiSec = document.getElementById('upiSection');
+            method === 'UPI' ? upiSec.classList.remove('hidden-section') : upiSec.classList.add('hidden-section');
+        }
+
+        async function placeOrder(e) {
+            e.preventDefault();
+            if(Object.keys(cartData).length === 0) return alert("Cart is empty!");
+            
+            let subtotal = Object.values(cartData).reduce((sum, i) => sum + (i.price * i.qty), 0);
+            if(subtotal < storeSettings.minOrder) return alert(`Minimum order is ₹${storeSettings.minOrder}`);
+
+            const orderId = 'ORD' + Date.now();
+            const method = document.getElementById('paymentMethod').value;
+            
+            // Get accurate totals
+            let delivery = subtotal >= storeSettings.freeThreshold ? 0 : storeSettings.deliveryCharge;
+            let tax = (subtotal * storeSettings.taxPercent) / 100;
+            let discount = 0;
+            if(activeCoupon) discount += (activeCoupon.type === 'percent' ? (subtotal * activeCoupon.value)/100 : activeCoupon.value);
+            if(document.getElementById('useLoyalty').checked) discount += (parseInt(document.getElementById('loyaltyPts').innerText)/10);
+            
+            const total = Math.max(0, subtotal + delivery + tax - discount);
+
+            const orderData = {
+                customer: {
+                    id: currentUser ? currentUser.uid : 'guest_' + Date.now(),
+                    name: document.getElementById('custName').value,
+                    phone: document.getElementById('custPhone').value,
+                },
+                deliveryAddress: {
+                    full: document.getElementById('custAddress').value,
+                    lat: userLocation ? userLocation.lat : null,
+                    lng: userLocation ? userLocation.lng : null
+                },
+                items: Object.values(cartData),
+                payment: { method: method, status: method === 'COD' || method === 'Restaurant' ? 'Pending' : 'Completed' },
+                charges: { subtotal, delivery, tax, discount, total, couponCode: activeCoupon ? activeCoupon.code : null },
+                status: "Placed",
+                statusHistory:[{status: "Placed", timestamp: Date.now()}],
+                timestamps: { placed: Date.now() }
+            };
+
+            document.getElementById('loadingOverlay').classList.remove('hidden-section');
+            try {
+                await db.ref(`orders/${orderId}`).set(orderData);
+                
+                // Loyalty deduction / addition
+                if(currentUser) {
+                    let newPts = Math.floor(total / 10); // Earn 1 pt per ₹10
+                    let ref = db.ref(`customers/${currentUser.uid}/loyalty/points`);
+                    ref.transaction(curr => {
+                        let pts = curr || 0;
+                        if(document.getElementById('useLoyalty').checked) pts = 0; // consumed all
+                        return pts + newPts;
+                    });
+                    await db.ref(`carts/${currentUser.uid}`).remove();
+                } else {
+                    localStorage.removeItem('guestCart');
+                }
+                
+                cartData = {};
+                activeCoupon = null;
+                document.getElementById('useLoyalty').checked = false;
+                document.getElementById('couponCode').value = '';
+                document.getElementById('couponMsg').classList.add('hidden-section');
+                
+                document.getElementById('loadingOverlay').classList.add('hidden-section');
+                alert("Order Placed Successfully!");
+                startTracking(orderId);
+                
+            } catch(err) {
+                document.getElementById('loadingOverlay').classList.add('hidden-section');
+                alert("Error placing order: " + err.message);
+            }
+        }
+
+        // 5. ORDER HISTORY & TRACKING
+        function loadOrderHistory() {
+            if(!currentUser) {
+                document.getElementById('ordersList').innerHTML = '<p class="text-center">Please login to view order history.</p>';
+                return;
+            }
+            db.ref('orders').orderByChild('customer/id').equalTo(currentUser.uid).limitToLast(20).once('value', snap => {
+                const list = document.getElementById('ordersList');
+                list.innerHTML = '';
+                const orders =[];
+                snap.forEach(c => { orders.push({id: c.key, ...c.val()}); });
+                orders.reverse(); // Newest first
+
+                if(orders.length===0) list.innerHTML = '<p class="text-center text-gray-500">No orders found.</p>';
+
+                orders.forEach(o => {
+                    const date = new Date(o.timestamps.placed).toLocaleString();
+                    const color = o.status === 'Delivered' ? 'bg-green-100 text-green-700' : (o.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700');
+                    list.innerHTML += `
+                        <div class="bg-white rounded-xl shadow-sm border p-4">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-bold">#${o.id}</h4>
+                                    <p class="text-xs text-gray-500">${date}</p>
+                                </div>
+                                <span class="px-2 py-1 rounded text-xs font-bold ${color}">${o.status}</span>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-3 line-clamp-1">${o.items.map(i=>`${i.qty}x ${i.name}`).join(', ')}</p>
+                            <div class="flex justify-between items-center border-t pt-3 mt-3">
+                                <span class="font-bold">₹${o.charges.total.toFixed(2)}</span>
+                                <div class="flex gap-2">
+                                    ${o.status !== 'Delivered' && o.status !== 'Cancelled' ? `<button onclick="startTracking('${o.id}')" class="bg-orange-500 text-white px-4 py-1.5 rounded text-sm font-bold shadow-sm">Track</button>` : ''}
+                                    ${o.status === 'Delivered' ? `<button onclick="reorder('${o.id}')" class="bg-gray-800 text-white px-4 py-1.5 rounded text-sm font-bold shadow-sm">Reorder</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function reorder(orderId) {
+            db.ref(`orders/${orderId}/items`).once('value', s=> {
+                const items = s.val();
+                if(items) {
+                    items.forEach(i => updateCart(i.id, i.qty));
+                    switchView('cart');
+                }
+            });
+        }
+
+        let trackingRef = null;
+        function startTracking(orderId) {
+            switchView('tracking');
+            document.getElementById('trackOrderId').innerText = orderId;
+            
+            // Initialize Map
+            if(!mapInstance) {
+                mapInstance = L.map('map').setView([RESTAURANT_LOC.lat, RESTAURANT_LOC.lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+                
+                // Custom Icons
+                const restIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448655.png', iconSize: [32, 32] });
+                const custIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1004/1004276.png', iconSize:[32, 32] });
+                const bikeIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2983/2983600.png', iconSize: [36, 36] });
+
+                mapMarkers.rest = L.marker([RESTAURANT_LOC.lat, RESTAURANT_LOC.lng], {icon: restIcon}).addTo(mapInstance).bindPopup("Restaurant");
+                if(userLocation) mapMarkers.cust = L.marker([userLocation.lat, userLocation.lng], {icon: custIcon}).addTo(mapInstance).bindPopup("You");
+                mapMarkers.partner = L.marker([RESTAURANT_LOC.lat, RESTAURANT_LOC.lng], {icon: bikeIcon});
+            }
+
+            if(trackingRef) trackingRef.off();
+            trackingRef = db.ref(`orders/${orderId}`);
+            
+            trackingRef.on('value', snap => {
+                const order = snap.val();
+                if(!order) return;
+
+                document.getElementById('trackStatusBadge').innerText = order.status;
+                
+                // Progress Bar Logic
+                const steps = { 'Placed': 1, 'Confirmed': 1, 'Preparing': 2, 'Ready': 2, 'OutForDelivery': 3, 'Delivered': 4 };
+                const currentStep = steps[order.status] || 1;['Prep', 'Out', 'Del'].forEach((id, idx) => {
+                    const el = document.getElementById(`step${id}`);
+                    if((idx+2) <= currentStep) { el.classList.remove('bg-gray-200', 'text-gray-500'); el.classList.add('bg-green-500', 'text-white'); }
+                    else { el.classList.add('bg-gray-200', 'text-gray-500'); el.classList.remove('bg-green-500', 'text-white'); }
+                });
+
+                if(order.estimatedDeliveryTime) document.getElementById('trackETA').innerText = order.estimatedDeliveryTime;
+
+                // Delivery Partner
+                if(order.deliveryPartner) {
+                    document.getElementById('partnerInfo').classList.remove('hidden-section');
+                document.getElementById('partnerName').innerText = order.deliveryPartner.name;
+                    document.getElementById('partnerVehicle').innerText = order.deliveryPartner.vehicleNumber || 'Bike';
+                    document.getElementById('partnerCall').href = `tel:${order.deliveryPartner.phone}`;
+                    
+                    if(order.deliveryPartner.currentLocation) {
+                        const loc = order.deliveryPartner.currentLocation;
+                        if(!mapInstance.hasLayer(mapMarkers.partner)) mapMarkers.partner.addTo(mapInstance);
+                        mapMarkers.partner.setLatLng([loc.lat, loc.lng]);
+                        // Center map on partner
+                        mapInstance.setView([loc.lat, loc.lng]);
+                    }
+                } else {
+                    document.getElementById('partnerInfo').classList.add('hidden-section');
+                    if(mapInstance.hasLayer(mapMarkers.partner)) mapInstance.removeLayer(mapMarkers.partner);
+                }
+            });
+        }
+
+        // INIT
+        window.onload = () => {
+            // Push Notification request
+            if ("Notification" in window) {
+                Notification.requestPermission();
+            }
+            checkLocation();
+        };
+    </script>
 </body>
 </html>
