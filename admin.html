@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Admin | Ramyasri Food</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .kanban-col { min-height: 300px; background: #f8fafc; border-radius: 0.5rem; padding: 0.5rem; }
+        .order-card { background: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 0.75rem; border-left: 4px solid #e53935; cursor: grab; }
+        .order-card:active { cursor: grabbing; }
+        
+        #authOverlay { position: fixed; inset: 0; background: #121212; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .brand-text { background: linear-gradient(to right, #e53935, #ff5252); -webkit-background-clip: text; color: transparent; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- Auth Firewall -->
+    <div id="authOverlay">
+        <div class="glass-panel p-10 rounded-2xl text-center max-w-sm w-full mx-4 shadow-2xl bg-white/10 border-white/10">
+            <div class="w-16 h-16 bg-red-600 text-white rounded-xl flex items-center justify-center font-bold text-3xl mx-auto mb-6 shadow-lg">R</div>
+            <h2 class="text-2xl font-bold text-white mb-2">Command Center</h2>
+            <p class="text-gray-400 text-sm mb-8">Restricted Access. Authorized personnel only.</p>
+            <button onclick="adminLogin()" class="w-full bg-white text-gray-900 font-bold py-3 rounded-xl hover:bg-gray-100 transition shadow flex items-center justify-center gap-2">
+                <i class="fa-brands fa-google text-red-500"></i> Authenticate via Google
+            </button>
+            <p id="authError" class="text-red-400 text-sm mt-4 hidden"></p>
+        </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 text-white flex flex-col transition-all duration-300">
+            <div class="p-6 border-b border-slate-800">
+                <h1 class="font-bold text-xl tracking-tight">RAMYASRI <span class="text-red-500">PRO</span></h1>
+                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Enterprise Management</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 bg-red-600 rounded-lg text-sm font-medium transition" id="nav-dashboard">
+                    <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+                </a>
+                <a href="#" onclick="switchTab('orders')" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-300 transition" id="nav-orders">
+                    <i class="fa-solid fa-layer-group w-5"></i> Orchestration <span class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full" id="newOrderCount">0</span>
+                </a>
+                <a href="#" onclick="switchTab('menu')" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-300 transition" id="nav-menu">
+                    <i class="fa-solid fa-utensils w-5"></i> Menu Mastery
+                </a>
+            </nav>
+            <div class="p-4 border-t border-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center"><i class="fa-solid fa-user text-xs"></i></div>
+                <div class="flex-1 overflow-hidden">
+                    <p class="text-xs font-medium truncate" id="adminName">Admin User</p>
+                    <p class="text-[10px] text-slate-400 truncate" id="adminEmail">admin@ramyasri.com</p>
+                </div>
+                <button onclick="auth.signOut()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 relative">
+            
+            <!-- Topbar -->
+            <header class="h-16 glass-panel border-b border-slate-200 flex items-center justify-between px-6 z-10">
+                <h2 class="font-bold text-lg text-slate-800" id="pageTitle">Executive Dashboard</h2>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-xs text-slate-500 font-medium">System Status</p>
+                        <p class="text-sm font-bold text-green-600 flex items-center gap-1 justify-end"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Online</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-6">
+                
+                <!-- TAB: DASHBOARD -->
+                <div id="tab-dashboard" class="space-y-6 block">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl border border-white">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                                <span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded">+14%</span>
+                            </div>
+                            <p class="text-sm text-slate-500 font-medium">Today's Revenue</p>
+                            <h3 class="text-2xl font-bold text-slate-800" id="dashRev">₹0.00</h3>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-box"></i></div>
+                                <span class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Live</span>
+                            </div>
+                            <p class="text-sm text-slate-500 font-medium">Total Orders</p>
+                            <h3 class="text-2xl font-bold text-slate-800" id="dashOrders">0</h3>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-users"></i></div>
+                            </div>
+                            <p class="text-sm text-slate-500 font-medium">Avg Order Value</p>
+                            <h3 class="text-2xl font-bold text-slate-800" id="dashAOV">₹0.00</h3>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-stopwatch"></i></div>
+                            </div>
+                            <p class="text-sm text-slate-500 font-medium">Avg Prep Time</p>
+                            <h3 class="text-2xl font-bold text-slate-800">22 mins</h3>
+                        </div>
+                    </div>
+
+                    <!-- Charts row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl">
+                            <h3 class="font-bold text-slate-800 mb-4">Revenue Analytics (7 Days)</h3>
+                            <canvas id="revChart" height="100"></canvas>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl">
+                            <h3 class="font-bold text-slate-800 mb-4">Order Status Distribution</h3>
+                            <canvas id="statusChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ORDERS (Kanban) -->
+                <div id="tab-orders" class="hidden h-full flex flex-col">
+                    <div class="flex gap-4 h-full overflow-x-auto pb-4">
+                        <!-- Placed -->
+                        <div class="w-80 flex-shrink-0 flex flex-col">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between">NEW <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-xs" id="cntPlaced">0</span></h3>
+                            <div class="kanban-col flex-1 overflow-y-auto" id="kb-Placed"></div>
+                        </div>
+                        <!-- Preparing -->
+                        <div class="w-80 flex-shrink-0 flex flex-col">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between">PREPARING <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs" id="cntPreparing">0</span></h3>
+                            <div class="kanban-col flex-1 overflow-y-auto" id="kb-Preparing"></div>
+                        </div>
+                        <!-- Ready -->
+                        <div class="w-80 flex-shrink-0 flex flex-col">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between">READY FOR PICKUP <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs" id="cntReady">0</span></h3>
+                            <div class="kanban-col flex-1 overflow-y-auto" id="kb-Ready"></div>
+                        </div>
+                        <!-- Delivered -->
+                        <div class="w-80 flex-shrink-0 flex flex-col">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between">DELIVERED <span class="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs" id="cntDelivered">0</span></h3>
+                            <div class="kanban-col flex-1 overflow-y-auto opacity-60" id="kb-Delivered"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: MENU MASTERY -->
+                <div id="tab-menu" class="hidden space-y-6">
+                    <div class="glass-panel p-6 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg">Menu Items</h3>
+                            <p class="text-sm text-slate-500">Manage your enterprise catalog</p>
+                        </div>
+                        <button onclick="document.getElementById('addMenuModal').classList.remove('hidden')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition shadow">
+                            <i class="fa-solid fa-plus mr-2"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                <tr>
+                                    <th class="px-6 py-4 font-medium">Item Name</th>
+                                    <th class="px-6 py-4 font-medium">Category</th>
+                                    <th class="px-6 py-4 font-medium">Price</th>
+                                    <th class="px-6 py-4 font-medium">Type</th>
+                                    <th class="px-6 py-4 font-medium text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="menuTableBody" class="divide-y divide-slate-100 bg-white">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Menu Modal -->
+    <div id="addMenuModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="font-bold text-xl mb-4">Add New Item</h3>
+            <form id="menuForm" class="space-y-4">
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">Item Name</label><input type="text" id="mName" required class="w-full border rounded-lg p-2 outline-none focus:border-red-500"></div>
+                <div class="flex gap-4">
+                    <div class="flex-1"><label class="block text-xs font-medium text-slate-500 mb-1">Price (₹)</label><input type="number" id="mPrice" required class="w-full border rounded-lg p-2 outline-none focus:border-red-500"></div>
+                    <div class="flex-1"><label class="block text-xs font-medium text-slate-500 mb-1">Category</label>
+                        <select id="mCat" class="w-full border rounded-lg p-2 outline-none">
+                            <option>Starters</option><option>Main</option><option>Beverages</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">Image URL</label><input type="url" id="mImg" class="w-full border rounded-lg p-2 outline-none focus:border-red-500" placeholder="https://..."></div>
+                <div class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="mVeg" class="w-4 h-4 text-red-600"><label class="text-sm font-medium">Is Vegetarian?</label>
+                </div>
+                <div class="pt-4 flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('addMenuModal').classList.add('hidden')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIGURATION (Same as Index) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
+            authDomain: "myfood-7ebe7.firebaseapp.com",
+            databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
+            projectId: "myfood-7ebe7",
+            storageBucket: "myfood-7ebe7.firebasestorage.app",
+            messagingSenderId: "144461701384",
+            appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // Admin Security Firewall
+        const AUTHORIZED_EMAILS =[
+            'bindhanibikash71@gmail.com', 'bindhanib958@gmail.com', 'bindhanibikash599@gmail.com',
+            'bikashworm@gmail.com', 'myfood.food.beverage@gmail.com', 'bbindhani149@gmail.com'
+        ];
+
+        let ordersData =[];
+        let chartInstanceRev = null;
+        let chartInstanceStat = null;
+
+        // Init
+        auth.onAuthStateChanged(user => {
+            const overlay = document.getElementById('authOverlay');
+            if (user) {
+                if(AUTHORIZED_EMAILS.includes(user.email)) {
+                    overlay.style.display = 'none';
+                    document.getElementById('adminName').innerText = user.displayName;
+                    document.getElementById('adminEmail').innerText = user.email;
+                    initSystem();
+                } else {
+                    document.getElementById('authError').innerText = "ACCESS DENIED: Unauthorized Email.";
+                    document.getElementById('authError').classList.remove('hidden');
+                    auth.signOut();
+                }
+            } else {
+                overlay.style.display = 'flex';
+            }
+        });
+
+        function adminLogin() {
+            auth.signInWithPopup(googleProvider).catch(e => alert(e.message));
+        }
+
+        // System Core
+        function initSystem() {
+            listenOrders();
+            listenMenu();
+            initCharts();
+        }
+
+        // Tab Switcher
+        function switchTab(tabId) {['dashboard', 'orders', 'menu'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('bg-red-600', 'text-white');
+                document.getElementById(`nav-${t}`).classList.add('text-slate-300');
+            });
+            
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            if(tabId === 'orders') document.getElementById(`tab-${tabId}`).classList.add('flex');
+            
+            document.getElementById(`nav-${tabId}`).classList.remove('text-slate-300');
+            document.getElementById(`nav-${tabId}`).classList.add('bg-red-600', 'text-white');
+            
+            const titles = { dashboard: 'Executive Dashboard', orders: 'Order Orchestration', menu: 'Menu Mastery' };
+            document.getElementById('pageTitle').innerText = titles[tabId];
+        }
+
+        // Order Listener & Dashboard Logic
+        function listenOrders() {
+            db.ref('orders').on('value', snap => {
+                const data = snap.val();
+                ordersData =[];
+                let todayRev = 0;
+                
+                ['Placed', 'Preparing', 'Ready', 'Delivered'].forEach(s => {
+                    document.getElementById(`kb-${s}`).innerHTML = '';
+                    document.getElementById(`cnt${s}`).innerText = '0';
+                });
+
+                if(data) {
+                    let counts = { Placed: 0, Preparing: 0, Ready: 0, Delivered: 0 };
+                    
+                    Object.keys(data).forEach(key => {
+                        const order = data[key];
+                        order.id = key;
+                        ordersData.push(order);
+                        
+                        // Today's Rev calc (simplistic logic)
+                        if(order.status === 'Delivered') todayRev += order.charges.total;
+
+                        // Kanban Injection
+                        if(counts[order.status] !== undefined) {
+                            counts[order.status]++;
+                            renderOrderCard(order);
+                        }
+                    });
+
+                     // Update UI Counters
+                    Object.keys(counts).forEach(k => document.getElementById(`cnt${k}`).innerText = counts[k]);
+                    document.getElementById('newOrderCount').innerText = counts.Placed;
+                    
+                    document.getElementById('dashOrders').innerText = ordersData.length;
+                    document.getElementById('dashRev').innerText = `₹${todayRev.toFixed(2)}`;
+                    let aov = ordersData.length > 0 ? todayRev / ordersData.length : 0;
+                    document.getElementById('dashAOV').innerText = `₹${aov.toFixed(2)}`;
+                    
+                    updateCharts(counts);
+                }
+            });
+        }
+
+        function renderOrderCard(order) {
+            const col = document.getElementById(`kb-${order.status}`);
+            const div = document.createElement('div');
+            div.className = "order-card text-sm";
+            
+            let btnHtml = '';
+            if(order.status === 'Placed') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Preparing')" class="mt-3 w-full bg-orange-100 text-orange-700 py-1.5 rounded text-xs font-bold hover:bg-orange-200">Start Prep</button>`;
+            else if(order.status === 'Preparing') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Ready')" class="mt-3 w-full bg-blue-100 text-blue-700 py-1.5 rounded text-xs font-bold hover:bg-blue-200">Mark Ready</button>`;
+            else if(order.status === 'Ready') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="mt-3 w-full bg-green-100 text-green-700 py-1.5 rounded text-xs font-bold hover:bg-green-200">Delivered</button>`;
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-bold text-slate-800">#${order.id.slice(-5).toUpperCase()}</span>
+                    <span class="text-xs font-bold text-red-600">₹${order.charges.total.toFixed(2)}</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-user mr-1"></i> ${order.customerInfo.name}</p>
+                <div class="border-t border-slate-100 pt-2 text-[11px] text-slate-600">
+                    ${order.items.map(i => `<div>${i.qty}x ${i.name}</div>`).join('')}
+                </div>
+                ${btnHtml}
+            `;
+            col.appendChild(div);
+        }
+
+        function updateOrderStatus(id, newStatus) {
+            db.ref(`orders/${id}`).update({ status: newStatus });
+        }
+
+        // Menu Management
+        function listenMenu() {
+            db.ref('menu/items').on('value', snap => {
+                const data = snap.val();
+                const tbody = document.getElementById('menuTableBody');
+                tbody.innerHTML = '';
+                if(data) {
+                    Object.keys(data).forEach(key => {
+                        const item = data[key];
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 flex items-center gap-3">
+                                    <img src="${item.image || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-lg object-cover">
+                                    <span class="font-medium text-slate-800">${item.name}</span>
+                                </td>
+                                <td class="px-6 py-4">${item.category || 'N/A'}</td>
+                                <td class="px-6 py-4 font-bold">₹${item.price}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-[10px] rounded-full font-bold ${item.isVeg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${item.isVeg ? 'VEG' : 'NON-VEG'}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button onclick="deleteItem('${key}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+        }
+
+        document.getElementById('menuForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerText = "Saving...";
+            
+            const newItem = {
+                name: document.getElementById('mName').value,
+                price: parseFloat(document.getElementById('mPrice').value),
+                category: document.getElementById('mCat').value,
+                image: document.getElementById('mImg').value || null,
+                isVeg: document.getElementById('mVeg').checked
+            };
+
+            db.ref('menu/items').push(newItem).then(() => {
+                document.getElementById('addMenuModal').classList.add('hidden');
+                e.target.reset();
+                btn.innerText = "Save Item";
+            });
+        });
+
+        function deleteItem(id) {
+            if(confirm("Delete this menu item?")) db.ref(`menu/items/${id}`).remove();
+        }
+
+        // Charts Initialization (Chart.js)
+        function initCharts() {
+            const ctxRev = document.getElementById('revChart').getContext('2d');
+            chartInstanceRev = new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels:['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets:[{
+                        label: 'Revenue (₹)',
+                        data:[12000, 19000, 15000, 22000, 18000, 32000, 28000], // Mock historical
+                        borderColor: '#e53935',
+                        backgroundColor: 'rgba(229, 57, 53, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxStat = document.getElementById('statusChart').getContext('2d');
+            chartInstanceStat = new Chart(ctxStat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Placed', 'Preparing', 'Ready', 'Delivered'],
+                    datasets:[{
+                        data: [0, 0, 0, 0],
+                        backgroundColor:['#ef4444', '#f97316', '#3b82f6', '#22c55e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+            });
+        }
+
+        function updateCharts(counts) {
+            if(chartInstanceStat) {
+                chartInstanceStat.data.datasets[0].data = [counts.Placed, counts.Preparing, counts.Ready, counts.Delivered];
+                chartInstanceStat.update();
+            }
+        }
+    </script>
+</body>
+</html>
