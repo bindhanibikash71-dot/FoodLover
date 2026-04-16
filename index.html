@@ -3,556 +3,606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <meta name="theme-color" content="#e53935">
-    <title>RAMYASRI FOOD & BEVERAGE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>RAMYASRI FOOD & BEVERAGE · Fine Dining</title>
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    
     <style>
-        :root {
-            --primary: #e53935; --primary-dark: #b71c1c; --gold: #FFD700;
-            --bg: #f8f9fa; --surface: #ffffff; --text: #1f2937; --text-light: #6b7280;
-            --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(255, 255, 255, 0.3);
-            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        }
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        /* RESET & VARIABLES */
+        /* ═══════════════════════════════════════════════════════════════════════════ */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; overflow-x: hidden; }
+        body { background: #fdf8f6; min-height: 100vh; }
+        :root { --crimson: #e53935; --crimson-dark: #ab000d; --crimson-light: #ff6659; --gold: #FFD700; --shadow: 0 4px 12px rgba(0,0,0,0.05); --shadow-lg: 0 20px 35px -8px rgba(0,0,0,0.12); }
         
-        /* Glassmorphism & Utilities */
-        .glass { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn:active { transform: scale(0.95); }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
-        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        /* LOCATION CHECK SCREEN */
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        #location-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #fff5f5, #fdf8f6); padding: 20px; }
+        .location-card { background: white; border-radius: 48px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
+        .location-card .icon { font-size: 64px; color: var(--crimson); margin-bottom: 24px; }
+        .location-card h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+        .location-card p { color: #666; margin-bottom: 24px; }
+        .location-card .distance { font-size: 18px; font-weight: 600; color: var(--crimson); margin: 16px 0; }
+        .btn { padding: 16px 32px; border-radius: 60px; font-weight: 600; border: none; cursor: pointer; font-size: 16px; transition: all 0.2s; }
+        .btn-primary { background: var(--crimson); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--crimson); color: var(--crimson); }
         
-        /* Skeleton Loading */
-        .skeleton { background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-        /* Header */
-        header { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; }
-        .logo-container { display: flex; align-items: center; gap: 10px; }
-        .logo { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
-        .brand-name { font-weight: 700; font-size: 1.2rem; color: var(--primary-dark); }
-        .header-actions { display: flex; gap: 15px; align-items: center; }
-
-        /* Hero & Search */
-        .hero { padding: 30px 5%; background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg') center/cover; color: white; border-radius: 0 0 25px 25px; margin-bottom: 30px; }
-        .search-bar { display: flex; margin-top: 20px; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .search-bar input { flex: 1; border: none; padding: 12px; border-radius: 8px; outline: none; font-size: 1rem; }
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        /* LOGIN SCREEN */
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #fff5f5, #fdf8f6); padding: 20px; }
+        .login-card { background: white; border-radius: 48px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
+        .login-logo { width: 90px; height: 90px; border-radius: 28px; object-fit: cover; margin: 0 auto 28px; display: block; background: var(--crimson); }
+        h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: #1a1a1a; }
+        .google-btn { background: white; border: 2px solid #e0e0e0; border-radius: 60px; padding: 18px 28px; width: 100%; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 14px; cursor: pointer; margin-top: 28px; transition: all 0.2s; }
+        .google-btn:hover { border-color: var(--crimson); background: #fff5f5; }
+        .google-btn i { color: var(--crimson); font-size: 22px; }
+        .guest-btn { margin-top: 16px; color: var(--crimson); font-weight: 600; cursor: pointer; }
         
-        /* Location Banner */
-        .location-banner { margin: 20px 5%; padding: 15px; border-radius: 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-        .loc-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-        .loc-error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
-
-        /* Menu Grid */
-        .categories { display: flex; gap: 15px; overflow-x: auto; padding: 0 5% 20px; scrollbar-width: none; }
-        .categories::-webkit-scrollbar { display: none; }
-        .cat-tab { padding: 8px 20px; border-radius: 20px; background: white; color: var(--text-light); white-space: nowrap; cursor: pointer; border: 1px solid #ddd; transition: 0.3s; }
-        .cat-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 0 5% 40px; }
-        .menu-card { background: white; border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.3s; display: flex; flex-direction: column; }
-        .menu-card:hover { transform: translateY(-5px); }
-        .menu-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
-        .menu-info { padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .menu-title { font-weight: 600; font-size: 1rem; margin-bottom: 5px; }
-        .menu-price { color: var(--primary); font-weight: 700; font-size: 1.1rem; }
-        .out-of-stock-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
-        .qty-control { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: 8px; margin-top: 10px; overflow: hidden; }
-        .qty-btn { padding: 8px 12px; background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; }
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        /* MAIN APP */
+        /* ═══════════════════════════════════════════════════════════════════════════ */
+        #customer-app { display: none; }
+        .app-header { background: white; padding: 16px 20px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header-logo { width: 48px; height: 48px; border-radius: 16px; object-fit: cover; background: var(--crimson); }
+        .container { max-width: 1280px; margin: 0 auto; padding: 16px 20px 100px; }
+        .search-wrapper { background: white; border-radius: 60px; padding: 4px 20px; display: flex; align-items: center; box-shadow: var(--shadow); margin: 20px 0; }
+        .search-wrapper input { border: none; background: transparent; width: 100%; padding: 16px 0; outline: none; font-size: 16px; }
+        .category-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 16px; white-space: nowrap; }
+        .cat-tab { padding: 10px 20px; border-radius: 40px; border: 1.5px solid #ddd; background: white; font-weight: 500; cursor: pointer; }
+        .cat-tab.active { background: var(--crimson); color: white; border-color: var(--crimson); }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+        .menu-card { background: white; border-radius: 24px; padding: 16px; box-shadow: var(--shadow); }
+        .menu-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 16px; background: #f0f0f0; }
+        .menu-card h4 { margin-top: 12px; font-weight: 700; }
+        .menu-price { color: var(--crimson); font-weight: 700; }
+        .oos-badge { background: #1e1e1e; color: white; font-size: 11px; padding: 4px 10px; border-radius: 30px; }
+        .add-btn { margin-top: 12px; width: 100%; padding: 12px; background: var(--crimson); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .add-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        /* Floating Cart & Modals */
-        .floating-cart { position: fixed; bottom: 20px; left: 5%; right: 5%; background: var(--primary-dark); color: white; border-radius: 16px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-shadow: 0 10px 25px rgba(229, 57, 53, 0.4); cursor: pointer; transition: transform 0.3s; }
-        .floating-cart.hidden { transform: translateY(150%); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-content { background: var(--surface); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 25px; transform: translateY(100%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto; }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-        .close-modal { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; color: var(--text-light); cursor: pointer; }
-
-        /* Forms & Checkout */
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
-        .input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
-        .input-group input:focus { border-color: var(--primary); }
+        /* CART BAR */
+        .cart-bar { position: fixed; bottom: 20px; left: 16px; right: 16px; background: white; border-radius: 32px; padding: 16px 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto; z-index: 500; }
+        .cart-icon { background: var(--crimson); width: 44px; height: 44px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; }
+        .cart-count { background: #1e1e1e; color: white; border-radius: 30px; padding: 2px 8px; font-size: 12px; margin-left: 8px; }
+        .cart-total { font-weight: 700; font-size: 18px; }
+        .checkout-btn { background: var(--crimson); color: white; padding: 12px 24px; border-radius: 40px; font-weight: 600; border: none; cursor: pointer; }
         
-        .payment-methods { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .pay-method { display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #ddd; border-radius: 12px; cursor: pointer; transition: 0.3s; }
-        .pay-method.selected { border-color: var(--primary); background: #fff8f8; }
-        .pay-method input { display: none; }
-        .upi-container { display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
-
-        /* Toast */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 12px 20px; border-radius: 8px; color: white; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .toast.success { background: #4CAF50; }
-        .toast.error { background: #f44336; }
-        .toast.info { background: #2196F3; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        /* Footer */
-        footer { background: #111; color: white; padding: 40px 5% 20px; text-align: center; margin-top: 40px; }
-        .social-links { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
-        .social-links a { color: white; font-size: 1.5rem; transition: 0.3s; }
-        .social-links a:hover { color: var(--primary); }
-        .footer-text { color: #888; font-size: 0.9rem; line-height: 1.6; }
-
-        /* WhatsApp FAB */
-        .wa-fab { position: fixed; bottom: 90px; right: 20px; background: #25D366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4); z-index: 900; text-decoration: none; transition: 0.3s; }
-        .wa-fab:hover { transform: scale(1.1); }
+        /* FOOTER */
+        .app-footer { background: white; padding: 30px 20px; margin-top: 40px; text-align: center; border-top: 1px solid #eee; }
+        .social-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+        .social-link { width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; text-decoration: none; }
+        .social-link.facebook { background: #1877F2; }
+        .social-link.instagram { background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4); }
+        
+        /* HELP FLOAT */
+        .help-float { position: fixed; bottom: 100px; right: 20px; background: #25D366; color: white; width: 56px; height: 56px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 20px rgba(37,211,102,0.3); z-index: 400; text-decoration: none; }
+        
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+        .modal { background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-radius: 36px; padding: 28px 24px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        .modal h3 { font-size: 22px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        .modal input, .modal select { width: 100%; padding: 18px; border-radius: 40px; border: 1.5px solid #eee; font-size: 16px; margin-bottom: 12px; background: white; }
+        
+        /* PAYMENT SELECTOR */
+        .payment-option { display: flex; align-items: center; gap: 12px; padding: 16px; border: 2px solid #eee; border-radius: 20px; margin-bottom: 12px; cursor: pointer; }
+        .payment-option.selected { border-color: var(--crimson); background: #fff5f5; }
+        .payment-option i { font-size: 24px; width: 40px; color: var(--crimson); }
+        
+        /* TRACKING */
+        .progress-track { display: flex; justify-content: space-between; margin: 24px 0; position: relative; }
+        .progress-step { flex: 1; text-align: center; font-size: 13px; color: #aaa; }
+        .progress-step.active { color: var(--crimson); font-weight: 600; }
+        .progress-step i { font-size: 24px; display: block; margin-bottom: 8px; background: white; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; margin: 0 auto; }
+        .progress-step.active i { background: var(--crimson); color: white; }
+        .map-container { height: 200px; border-radius: 20px; margin: 16px 0; background: #f0f0f0; }
+        
+        /* TOAST */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: white; padding: 14px 28px; border-radius: 60px; z-index: 9999; opacity: 0; transition: opacity 0.25s; }
+        .toast.show { opacity: 1; }
+        
+        @media (max-width: 480px) { .menu-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
 
-    <!-- App Container -->
-    <div id="app" style="display: none;">
-        <header class="glass">
-            <div class="logo-container">
-                <img id="siteLogo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" alt="Logo" class="logo" onerror="this.src='https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg'">
-                <span class="brand-name">RAMYASRI</span>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-outline" id="ordersBtn" style="display:none;" onclick="showOrders()"><i class="fas fa-receipt"></i></button>
-                <button class="btn btn-primary" id="authBtn" onclick="handleAuth()"><i class="fas fa-user"></i> <span id="authText">Login</span></button>
-            </div>
-        </header>
+<!-- LOCATION CHECK SCREEN -->
+<div id="location-screen">
+    <div class="location-card">
+        <i class="fas fa-map-marker-alt icon"></i>
+        <h2 id="location-title">Checking your location...</h2>
+        <p id="location-message">Please wait while we verify delivery availability</p>
+        <div id="location-distance" class="distance"></div>
+        <button id="location-retry" class="btn btn-primary" style="display:none;" onclick="checkLocation()">Try Again</button>
+    </div>
+</div>
 
-        <section class="hero">
-            <h2>Delicious Food, Delivered to You</h2>
-            <p>Within 10km of our kitchen</p>
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search for dishes..." onkeyup="filterMenu()">
-                <button class="btn btn-primary"><i class="fas fa-search"></i></button>
-            </div>
-        </section>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display: none;">
+    <div class="login-card">
+        <img id="login-logo" class="login-logo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" alt="RAMYASRI">
+        <h1>RAMYASRI</h1>
+        <p style="color:#666;font-weight:500">FOOD & BEVERAGE LTD</p>
+        <p style="color:#999;font-size:13px;margin-bottom:20px">Fine Dining</p>
+        <button id="google-login-btn" class="google-btn"><i class="fab fa-google"></i>Continue with Google</button>
+        <button id="guest-login-btn" class="guest-btn">Continue as Guest →</button>
+    </div>
+</div>
 
-        <div id="locationStatus" class="location-banner loc-error">
-            <i class="fas fa-map-marker-alt"></i> Checking delivery location availability...
-        </div>
-
-        <div class="categories" id="categoryContainer">
-            <!-- Categories rendered here -->
-        </div>
-
-        <div class="menu-grid" id="menuContainer">
-            <!-- Skeleton items -->
-            <div class="menu-card skeleton" style="height: 250px;"></div>
-            <div class="menu-card skeleton" style="height: 250px;"></div>
-            <div class="menu-card skeleton" style="height: 250px;"></div>
-            <div class="menu-card skeleton" style="height: 250px;"></div>
-        </div>
-
-        <!-- Floating Cart -->
-        <div class="floating-cart hidden" id="floatingCart" onclick="openCheckout()">
+<!-- MAIN APP -->
+<div id="customer-app">
+    <header class="app-header">
+        <div style="display:flex;align-items:center;gap:14px">
+            <img id="header-logo" class="header-logo" src="https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg" alt="RAMYASRI">
             <div>
-                <i class="fas fa-shopping-bag"></i> <span id="cartCount">0</span> Items
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span style="font-weight: 700;">₹<span id="cartTotal">0</span></span>
-                <span>Checkout <i class="fas fa-arrow-right"></i></span>
+                <h2 style="font-weight:700;font-size:18px">RAMYASRI</h2>
+                <p style="font-size:11px;color:#666">FOOD & BEVERAGE LTD</p>
             </div>
         </div>
+        <div style="display:flex;gap:8px">
+            <button id="history-btn" style="background:#f5f5f5;width:44px;height:44px;border-radius:30px;border:none"><i class="fa-regular fa-clock" style="color:var(--crimson)"></i></button>
+            <button id="logout-btn" style="background:#f5f5f5;width:44px;height:44px;border-radius:30px;border:none"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+        </div>
+    </header>
 
-        <footer>
-            <h3>RAMYASRI FOOD & BEVERAGE</h3>
-            <p style="color: var(--gold); margin: 5px 0;">Since 2024</p>
-            <div class="social-links" id="footerSocials">
-                <!-- Social links injected here -->
-            </div>
-            <div class="footer-text">
-                📍 Restaurant Location: Within 10km delivery<br>
-                📞 Contact: +91 83413 12204<br>
-                ✉️ Email: ramyasri@gmail.com<br><br>
-                🕐 Open: 10:00 AM - 10:00 PM (Mon-Sun)<br><br>
-                © 2024 RAMYASRI. All rights reserved.
-            </div>
-        </footer>
-
-        <a href="https://wa.me/918341312204" target="_blank" class="wa-fab"><i class="fab fa-whatsapp"></i></a>
+    <div class="container">
+        <div class="search-wrapper">
+            <i class="fa-solid fa-magnifying-glass" style="color:#aaa;margin-right:14px"></i>
+            <input type="text" id="search-input" placeholder="Search dishes..." autocomplete="off">
+        </div>
+        <div id="category-tabs" class="category-tabs"></div>
+        <div id="menu-grid" class="menu-grid"></div>
     </div>
 
-    <!-- Modals -->
-    <!-- Checkout Modal -->
-    <div class="modal-overlay" id="checkoutModal" onclick="closeModal(event, 'checkoutModal')">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal(null, 'checkoutModal')">&times;</button>
-            <h2 style="margin-bottom: 20px;"><i class="fas fa-credit-card"></i> Checkout</h2>
+    <footer class="app-footer">
+        <div class="social-links" id="social-links-container"></div>
+        <p style="color:#999;font-size:13px">
+            © 2024 RAMYASRI FOOD & BEVERAGE LTD<br>
+            <a href="tel:+918341312204" style="color:var(--crimson)">+91 83413 12204</a> | 
+            <span id="store-hours"></span>
+        </p>
+    </footer>
+
+    <div id="cart-bar" class="cart-bar">
+        <div style="display:flex;align-items:center;gap:12px">
+            <div class="cart-icon"><i class="fa-solid fa-bag-shopping"></i></div>
+            <div><span style="font-weight:600">Cart</span><span id="cart-count" class="cart-count">0</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <span id="cart-total" class="cart-total">₹0</span>
+            <button id="checkout-btn" class="checkout-btn">Checkout →</button>
+        </div>
+    </div>
+
+    <a href="https://wa.me/918341312204" class="help-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cart-modal">
+    <div class="modal">
+        <h3>Your Order <button onclick="closeCartModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
+        <div id="cart-items-list" style="max-height:200px;overflow-y:auto"></div>
+        <input type="text" id="customer-name" placeholder="Full Name">
+        <input type="tel" id="customer-phone" placeholder="Phone Number *">
+        <input type="text" id="customer-address" placeholder="Delivery Address *">
+        
+        <h4 style="margin:16px 0 12px">Payment Method</h4>
+        <div class="payment-option selected" id="payment-cod" onclick="selectPayment('cod')">
+            <i class="fa-solid fa-money-bill"></i>
+            <div><strong>Cash on Delivery</strong><br><small>Pay when you receive</small></div>
+        </div>
+        <div class="payment-option" id="payment-upi" onclick="selectPayment('upi')">
+            <i class="fa-solid fa-mobile-screen"></i>
+            <div><strong>UPI Payment</strong><br><small>Google Pay / PhonePe / Paytm</small></div>
+        </div>
+        <div id="upi-details" style="display:none;padding:16px;background:#f5f5f5;border-radius:20px;margin:12px 0">
+            <p><strong>UPI ID:</strong> <span id="upi-id-display">8341312204@ybl</span></p>
+            <p><strong>Payee:</strong> RAMYASRI FOOD</p>
+            <button class="checkout-btn" onclick="openUPIApp()">Pay via UPI App</button>
+        </div>
+        
+        <button class="checkout-btn" onclick="placeOrder()" style="margin-top:16px">Place Order · <span id="final-amount">₹0</span></button>
+    </div>
+</div>
+
+<!-- TRACKING MODAL -->
+<div class="modal-overlay" id="tracking-modal">
+    <div class="modal">
+        <h3>Live Tracking <button onclick="closeTrackingModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
+        <p><strong>Order #<span id="tracking-order-id"></span></strong> · <span id="estimated-time">25-35 mins</span></p>
+        <div id="tracking-progress"></div>
+        <div id="timeline-container"></div>
+        <div id="delivery-partner-card" style="background:#f5f5f5;border-radius:20px;padding:16px;margin:16px 0"></div>
+        <div id="tracking-map" class="map-container"></div>
+        <button class="checkout-btn" onclick="callDeliveryPartner()"><i class="fa-solid fa-phone"></i> Call Delivery Partner</button>
+    </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="history-modal">
+    <div class="modal">
+        <h3>Order History <button onclick="closeHistoryModal()" style="border:none;background:none;cursor:pointer"><i class="fa-solid fa-xmark"></i></button></h3>
+        <div id="history-list"></div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIREBASE CONFIG
+    // ═══════════════════════════════════════════════════════════════════════════
+    const firebaseConfig = {
+        apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
+        authDomain: "myfood-7ebe7.firebaseapp.com",
+        databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
+        projectId: "myfood-7ebe7",
+        storageBucket: "myfood-7ebe7.firebasestorage.app",
+        messagingSenderId: "144461701384",
+        appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GLOBAL VARIABLES
+    // ═══════════════════════════════════════════════════════════════════════════
+    const RESTAURANT = { lat: 17.442120, lng: 78.377530, radius: 10 };
+    const DEFAULT_LOGO = 'https://i.ibb.co/nNMJzzwx/IMG-20260412-WA0000.jpg';
+    const OWNER_PHONE = '+918341312204';
+    
+    let currentUser = null;
+    let cart = {};
+    let menuData = {};
+    let currentCategory = 'All';
+    let trackingOrderId = null;
+    let trackingMap = null;
+    let selectedPayment = 'cod';
+    let userLocation = null;
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.background = isError ? '#d32f2f' : '#1e1e1e';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LOCATION CHECK
+    // ═══════════════════════════════════════════════════════════════════════════
+    function checkLocation() {
+        const screen = document.getElementById('location-screen');
+        const title = document.getElementById('location-title');
+        const msg = document.getElementById('location-message');
+        const distanceDiv = document.getElementById('location-distance');
+        const retryBtn = document.getElementById('location-retry');
+        
+        if (!navigator.geolocation) {
+            title.textContent = 'Location Not Supported';
+            msg.textContent = 'Your browser does not support geolocation';
+            retryBtn.style.display = 'block';
+            return;
+        }
+        
+        title.textContent = 'Checking your location...';
+        msg.textContent = 'Please wait while we verify delivery availability';
+        
+        navigator.geolocation.getCurrentPosition((pos) => {
+            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            const distance = calculateDistance(RESTAURANT.lat, RESTAURANT.lng, userLocation.lat, userLocation.lng);
             
-            <div class="input-group">
-                <label>Full Name</label>
-                <input type="text" id="chkName" placeholder="Your Name">
-            </div>
-            <div class="input-group">
-                <label>Phone Number (Required)</label>
-                <input type="tel" id="chkPhone" placeholder="+91 XXXXX XXXXX" required>
-            </div>
-            <div class="input-group">
-                <label>Delivery Address</label>
-                <textarea id="chkAddress" rows="2" placeholder="Full Address with Landmark"></textarea>
-            </div>
-
-            <h3 style="margin: 20px 0 10px;">Payment Method</h3>
-            <div class="payment-methods">
-                <label class="pay-method selected" onclick="selectPayment('COD', this)">
-                    <i class="fas fa-money-bill-wave" style="color: #4CAF50; font-size: 1.5rem;"></i>
-                    <div style="flex:1"><strong>Cash on Delivery (COD)</strong><br><small>Pay when you receive</small></div>
-                </label>
-                
-                <label class="pay-method" onclick="selectPayment('UPI', this)">
-                    <i class="fas fa-qrcode" style="color: #673AB7; font-size: 1.5rem;"></i>
-                    <div style="flex:1"><strong>UPI (GPay / PhonePe)</strong><br><small>Pay via UPI App</small></div>
-                </label>
-                <div id="upiDetails" class="upi-container">
-                    <p><strong>UPI ID:</strong> 8341312204@ybl</p>
-                    <p style="font-size: 0.8rem; color: #666;">Please complete payment after placing order. Order processes upon verification.</p>
-                </div>
-
-                <label class="pay-method" onclick="selectPayment('PICKUP', this)">
-                    <i class="fas fa-store" style="color: #FF9800; font-size: 1.5rem;"></i>
-                    <div style="flex:1"><strong>Pay at Restaurant</strong><br><small>Self Pickup</small></div>
-                </label>
-            </div>
-
-            <div style="background: var(--bg); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Items Total:</span> <span>₹<span id="summaryTotal">0</span></span></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Delivery:</span> <span>₹40</span></div>
-                <hr style="border: none; border-top: 1px dashed #ccc; margin: 10px 0;">
-                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem; color: var(--primary);">
-                    <span>TOTAL:</span> <span>₹<span id="finalTotal">0</span></span>
-                </div>
-            </div>
-
-            <button class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;" onclick="placeOrder()">Place Order <i class="fas fa-rocket"></i></button>
-        </div>
-    </div>
-
-    <!-- Orders Modal -->
-    <div class="modal-overlay" id="ordersModal" onclick="closeModal(event, 'ordersModal')">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal(null, 'ordersModal')">&times;</button>
-            <h2 style="margin-bottom: 20px;"><i class="fas fa-history"></i> My Orders</h2>
-            <div id="orderList" style="display: flex; flex-direction: column; gap: 15px;">
-                <!-- Orders populated here -->
-            </div>
-        </div>
-    </div>
-
-    <div class="toast-container" id="toastBox"></div>
-
-    <!-- Firebase Scripts -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, get, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
-            authDomain: "myfood-7ebe7.firebaseapp.com",
-            databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
-            projectId: "myfood-7ebe7",
-            storageBucket: "myfood-7ebe7.firebasestorage.app",
-            messagingSenderId: "144461701384",
-            appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const auth = getAuth(app);
-        setPersistence(auth, browserLocalPersistence);
-
-        const RESTAURANT_LOC = { lat: 17.442120, lng: 78.377530 };
-        const MAX_RADIUS_KM = 10;
-
-        let currentUser = null;
-        let menuItems = [];
-        let cart = {};
-        let activeCategory = 'All';
-        let selectedPaymentMethod = 'COD';
-        let locationValid = false;
-
-        // Init App
-        window.onload = () => {
-            document.getElementById('app').style.display = 'block';
-            checkLocation();
-            loadSettings();
-            loadMenu();
-        };
-
-        // Auth
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            const btn = document.getElementById('authBtn');
-            const ordersBtn = document.getElementById('ordersBtn');
-            if (user) {
-                document.getElementById('authText').innerText = user.displayName.split(' ')[0];
-                btn.classList.replace('btn-primary', 'btn-outline');
-                ordersBtn.style.display = 'inline-flex';
-                loadCart();
-                if(document.getElementById('chkName').value === "") document.getElementById('chkName').value = user.displayName;
+            if (distance <= RESTAURANT.radius) {
+                sessionStorage.setItem('locationVerified', 'true');
+                screen.style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
             } else {
-                document.getElementById('authText').innerText = 'Login';
-                btn.classList.replace('btn-outline', 'btn-primary');
-                ordersBtn.style.display = 'none';
-                cart = {};
-                updateCartUI();
+                title.textContent = '📍 Outside Delivery Area';
+                msg.textContent = `Sorry! We don't deliver to your location yet.`;
+                distanceDiv.textContent = `You are ${distance.toFixed(1)} km away (Max: ${RESTAURANT.radius} km)`;
+                retryBtn.style.display = 'block';
+            }
+        }, (err) => {
+            title.textContent = 'Location Required';
+            msg.textContent = 'Please enable location to check delivery availability';
+            retryBtn.style.display = 'block';
+        });
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AUTHENTICATION
+    // ═══════════════════════════════════════════════════════════════════════════
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('customer-app').style.display = 'block';
+            initApp();
+        }
+    });
+    
+    document.getElementById('google-login-btn').onclick = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(() => auth.signInWithRedirect(provider));
+    };
+    
+    document.getElementById('guest-login-btn').onclick = () => {
+        currentUser = { uid: 'guest_' + Date.now(), displayName: 'Guest', isGuest: true };
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('customer-app').style.display = 'block';
+        initApp();
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INIT APP
+    // ═══════════════════════════════════════════════════════════════════════════
+    function initApp() {
+        loadSettings();
+        loadMenu();
+        loadCart();
+        document.getElementById('logout-btn').onclick = () => auth.signOut();
+        document.getElementById('history-btn').onclick = showHistory;
+        document.getElementById('checkout-btn').onclick = openCart;
+        document.getElementById('search-input').addEventListener('input', filterMenu);
+    }
+    
+    function loadSettings() {
+        db.ref('settings').on('value', snap => {
+            const s = snap.val() || {};
+            const logo = s.logo?.main || DEFAULT_LOGO;
+            document.getElementById('login-logo').src = logo;
+            document.getElementById('header-logo').src = logo;
+            
+            if (s.social) {
+                let html = '';
+                if (s.social.facebook) html += `<a href="${s.social.facebook}" target="_blank" class="social-link facebook"><i class="fab fa-facebook-f"></i></a>`;
+                if (s.social.instagram) html += `<a href="${s.social.instagram}" target="_blank" class="social-link instagram"><i class="fab fa-instagram"></i></a>`;
+                document.getElementById('social-links-container').innerHTML = html || '<p style="color:#999">Follow us</p>';
+            }
+            
+            if (s.store?.hours) {
+                document.getElementById('store-hours').textContent = `${s.store.hours.open || '10:00'} - ${s.store.hours.close || '22:00'}`;
+            }
+            
+            if (s.payment?.upi?.primaryId) {
+                document.getElementById('upi-id-display').textContent = s.payment.upi.primaryId;
             }
         });
-
-        window.handleAuth = () => {
-            if (currentUser) {
-                signOut(auth).then(() => showToast('Logged out successfully', 'info'));
-            } else {
-                const provider = new GoogleAuthProvider();
-                signInWithPopup(auth, provider).then(() => showToast('Login successful!', 'success')).catch(e => showToast(e.message, 'error'));
-            }
-        };
-
-        // Location Check
-        function checkLocation() {
-            const locDiv = document.getElementById('locationStatus');
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const dist = calculateDistance(RESTAURANT_LOC.lat, RESTAURANT_LOC.lng, position.coords.latitude, position.coords.longitude);
-                        if (dist <= MAX_RADIUS_KM) {
-                            locationValid = true;
-                            locDiv.className = 'location-banner loc-success';
-                            locDiv.innerHTML = `<i class="fas fa-check-circle"></i> Location verified! You are ${dist.toFixed(1)}km away.`;
-                        } else {
-                            locationValid = false;
-                            locDiv.className = 'location-banner loc-error';
-              }
-                    },
-                    (error) => {
-                        locDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Please enable location to verify delivery availability.`;
-                    }
-                );
-            }
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        // Load Data
-        function loadSettings() {
-            onValue(ref(db, 'settings'), (snapshot) => {
-                const data = snapshot.val();
-                if(data?.logo) document.getElementById('siteLogo').src = data.logo;
-                
-                const socials = data?.social || {};
-                const socialHtml = `
-                    ${socials.facebook ? `<a href="${socials.facebook}"><i class="fab fa-facebook"></i></a>` : ''}
-                    ${socials.instagram ? `<a href="${socials.instagram}"><i class="fab fa-instagram"></i></a>` : ''}
-                    ${socials.twitter ? `<a href="${socials.twitter}"><i class="fab fa-twitter"></i></a>` : ''}
-                    ${socials.youtube ? `<a href="${socials.youtube}"><i class="fab fa-youtube"></i></a>` : ''}
-                    <a href="https://wa.me/918341312204"><i class="fab fa-whatsapp"></i></a>
-                `;
-                document.getElementById('footerSocials').innerHTML = socialHtml || '<a href="https://wa.me/918341312204"><i class="fab fa-whatsapp"></i></a>';
-            });
-        }
-
-        function loadMenu() {
-            onValue(ref(db, 'menu/items'), (snapshot) => {
-                menuItems = [];
-                const categories = new Set(['All']);
-                snapshot.forEach(child => {
-                    const item = { id: child.key, ...child.val() };
-                    menuItems.push(item);
-                    if(item.category) categories.add(item.category);
-                });
-                renderCategories(Array.from(categories));
-                renderMenu();
-            });
-        }
-
-        // UI Renderers
-        function renderCategories(cats) {
-            const container = document.getElementById('categoryContainer');
-            container.innerHTML = cats.map(cat => 
-                `<div class="cat-tab ${cat === activeCategory ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`
-            ).join('');
-        }
-
-        window.setCategory = (cat) => { activeCategory = cat; renderCategories([...new Set(['All', ...menuItems.map(i=>i.category)])]); renderMenu(); }
-        window.filterMenu = renderMenu;
-
-        function renderMenu() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = menuItems.filter(item => 
-                (activeCategory === 'All' || item.category === activeCategory) &&
-                item.name.toLowerCase().includes(query)
-            );
-
-            const container = document.getElementById('menuContainer');
-            if(filtered.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">No items found.</div>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map(item => {
-                const qty = cart[item.id]?.qty || 0;
-                const inStock = item.inStock !== false;
-                const img = item.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg';
-                
-                return `
-                <div class="menu-card">
-                    ${!inStock ? `<div class="out-of-stock-badge">Out of Stock</div>` : ''}
-                    <img src="${img}" class="menu-img" alt="${item.name}" loading="lazy">
-                    <div class="menu-info">
-                        <div>
-                            <div class="menu-title">${item.name}</div>
-                            <div class="menu-price">₹${item.price}</div>
-                        </div>
-                        ${!inStock ? `<button class="btn btn-disabled" style="width:100%; margin-top:10px;">Unavailable</button>` : 
-                            qty > 0 ? `
-                            <div class="qty-control">
-                                <button class="qty-btn" onclick="updateItemQty('${item.id}', -1)">-</button>
-                                <span>${qty}</span>
-                                <button class="qty-btn" onclick="updateItemQty('${item.id}', 1)">+</button>
-                            </div>` : 
-                            `<button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="updateItemQty('${item.id}', 1)">Add to Cart</button>`
-                        }
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        // Cart Logic
-        function loadCart() {
-            if(!currentUser) return;
-            get(ref(db, `carts/${currentUser.uid}`)).then(snap => {
-                cart = snap.val() || {};
-                updateCartUI();
-                renderMenu();
-            });
-        }
-
-        window.updateItemQty = (itemId, change) => {
-            if(!currentUser) return showToast('Please login to add items', 'warning');
-            const item = menuItems.find(i => i.id === itemId);
-            if(!item) return;
-
-            if(!cart[itemId]) cart[itemId] = { name: item.name, price: item.price, qty: 0 };
-            cart[itemId].qty += change;
-
-            if(cart[itemId].qty <= 0) delete cart[itemId];
-
-            set(ref(db, `carts/${currentUser.uid}`), cart);
-            updateCartUI();
+    }
+    
+    function loadMenu() {
+        db.ref('menu').on('value', snap => {
+            menuData = snap.val() || {};
             renderMenu();
-            if(change > 0 && navigator.vibrate) navigator.vibrate(50);
+        });
+    }
+    
+    function renderMenu() {
+        const items = Object.entries(menuData);
+        const cats = ['All', ...new Set(items.map(([id, i]) => i.category))];
+        document.getElementById('category-tabs').innerHTML = cats.map(c => 
+            `<button class="cat-tab ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+        ).join('');
+        filterItems();
+    }
+    
+    window.setCategory = cat => { currentCategory = cat; renderMenu(); };
+    
+    function filterItems() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        let items = Object.entries(menuData);
+        if (currentCategory !== 'All') items = items.filter(([id, i]) => i.category === currentCategory);
+        if (q) items = items.filter(([id, i]) => i.name.toLowerCase().includes(q));
+        
+        const grid = document.getElementById('menu-grid');
+        grid.innerHTML = items.length ? items.map(([id, i]) => `
+            <div class="menu-card">
+                <img src="${i.image || DEFAULT_LOGO}" class="menu-img" onerror="this.src='${DEFAULT_LOGO}'">
+                <h4>${i.name}</h4>
+                <p class="menu-price">₹${i.price}</p>
+                ${!i.inStock ? '<span class="oos-badge">Out of Stock</span>' : ''}
+                <button class="add-btn" onclick="addToCart('${id}','${i.name}',${i.price})" ${!i.inStock ? 'disabled' : ''}>Add</button>
+            </div>
+        `).join('') : '<p style="grid-column:1/-1;text-align:center;padding:40px">No items</p>';
+    }
+    
+    function filterMenu() { filterItems(); }
+    
+    window.addToCart = (id, name, price) => {
+        if (cart[id]) cart[id].qty++;
+        else cart[id] = { name, price, qty: 1 };
+        db.ref(`carts/${currentUser.uid}`).set(cart);
+        showToast(`✓ ${name} added`);
+    };
+    
+    function loadCart() {
+        db.ref(`carts/${currentUser.uid}`).on('value', snap => {
+            cart = snap.val() || {};
+            updateCartUI();
+        });
+    }
+    
+    function updateCartUI() {
+        const items = Object.values(cart);
+        const total = items.reduce((s, i) => s + (i.price * i.qty), 0);
+        document.getElementById('cart-total').textContent = `₹${total.toLocaleString('en-IN')}`;
+        document.getElementById('cart-count').textContent = items.reduce((s, i) => s + i.qty, 0);
+    }
+    
+    function openCart() {
+        if (!Object.keys(cart).length) { showToast('Cart empty', true); return; }
+        const items = Object.entries(cart);
+        const total = items.reduce((s, [id, i]) => s + (i.price * i.qty), 0);
+        document.getElementById('cart-items-list').innerHTML = items.map(([id, i]) => `
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+                <span>${i.name} × ${i.qty}</span>
+                <span>₹${(i.price * i.qty).toLocaleString('en-IN')}</span>
+            </div>
+        `).join('');
+        document.getElementById('final-amount').textContent = `₹${total.toLocaleString('en-IN')}`;
+        document.getElementById('cart-modal').style.display = 'flex';
+    }
+    
+    window.closeCartModal = () => document.getElementById('cart-modal').style.display = 'none';
+    
+    window.selectPayment = method => {
+        selectedPayment = method;
+        document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+        document.getElementById(`payment-${method}`).classList.add('selected');
+        document.getElementById('upi-details').style.display = method === 'upi' ? 'block' : 'none';
+    };
+    
+    window.openUPIApp = () => {
+        const upiId = document.getElementById('upi-id-display').textContent;
+        const amount = Object.values(cart).reduce((s, i) => s + (i.price * i.qty), 0);
+        window.location.href = `upi://pay?pa=${upiId}&pn=RAMYASRI&am=${amount}&cu=INR`;
+    };
+    
+    window.placeOrder = () => {
+        const name = document.getElementById('customer-name').value.trim();
+        const phone = document.getElementById('customer-phone').value.trim();
+        const address = document.getElementById('customer-address').value.trim();
+        
+        if (!phone || !address) { showToast('Phone and Address required', true); return; }
+        
+        const items = Object.entries(cart);
+        const subtotal = items.reduce((s, [id, i]) => s + (i.price * i.qty), 0);
+        const delivery = 40;
+        const total = subtotal + delivery;
+        
+        const order = {
+            customer: { id: currentUser.uid, name: name || 'Guest', phone, email: currentUser.email || '' },
+            deliveryAddress: { full: address, lat: userLocation?.lat || null, lng: userLocation?.lng || null },
+            items: cart,
+            payment: { method: selectedPayment, status: selectedPayment === 'cod' ? 'pending' : 'pending' },
+            charges: { subtotal, delivery, total },
+            status: 'Placed',
+            statusHistory: [{ status: 'Placed', timestamp: Date.now() }],
+            timestamps: { placed: Date.now() },
+            estimatedDeliveryTime: '25-35 minutes'
         };
-
-        function updateCartUI() {
-            const count = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
-            const total = Object.values(cart).reduce((sum, item) => sum + (item.price * item.qty), 0);
+        
+        db.ref('orders').push(order).then(() => {
+            db.ref(`carts/${currentUser.uid}`).remove();
+            closeCartModal();
+            showToast('🎉 Order Placed!');
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('customer-address').value = '';
+        });
+    };
+    
+    function showHistory() {
+        db.ref('orders').orderByChild('customer/id').equalTo(currentUser.uid).on('value', snap => {
+            const orders = snap.val();
+            const list = document.getElementById('history-list');
+            if (!orders) { list.innerHTML = '<p>No orders</p>'; return; }
             
-            document.getElementById('cartCount').innerText = count;
-            document.getElementById('cartTotal').innerText = total;
-            document.getElementById('summaryTotal').innerText = total;
-            document.getElementById('finalTotal').innerText = total > 0 ? total + 40 : 0; // +40 delivery
-
-            const cartEl = document.getElementById('floatingCart');
-            if(count > 0) cartEl.classList.remove('hidden');
-            else cartEl.classList.add('hidden');
-        }
-
-        // Checkout Modals
-        window.openCheckout = () => {
-            if(!locationValid) return showToast('Delivery not available at your location', 'error');
-            document.getElementById('checkoutModal').classList.add('active');
-        };
-
-        window.closeModal = (e, id) => {
-            if(e && e.target.id !== id) return;
-            document.getElementById(id).classList.remove('active');
-        };
-
-        window.selectPayment = (method, el) => {
-            selectedPaymentMethod = method;
-            document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('selected'));
-            el.classList.add('selected');
-            document.getElementById('upiDetails').style.display = method === 'UPI' ? 'block' : 'none';
-        };
-
-        window.placeOrder = async () => {
-            const phone = document.getElementById('chkPhone').value;
-            const address = document.getElementById('chkAddress').value;
-            const name = document.getElementById('chkName').value;
-
-            if(!phone || phone.length < 10) return showToast('Valid phone number is required', 'error');
-            if(!address && selectedPaymentMethod !== 'PICKUP') return showToast('Address is required for delivery', 'error');
-
-            const total = Object.values(cart).reduce((sum, i) => sum + (i.price * i.qty), 0) + 40;
-            const orderData = {
-                userId: currentUser.uid,
-                userName: name || currentUser.displayName,
-                phone, address, items: cart,
-                total, paymentMethod: selectedPaymentMethod,
-                status: 'Placed',
-                timestamp: serverTimestamp(),
-                date: new Date().toISOString().split('T')[0]
-            };
-
-            try {
-                document.querySelector('#checkoutModal .btn-primary').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                await push(ref(db, 'orders'), orderData);
-                await set(ref(db, `carts/${currentUser.uid}`), null);
-                cart = {};
-                updateCartUI();
-                renderMenu();
-                closeModal(null, 'checkoutModal');
-                showToast('Order Placed Successfully! 🎉', 'success');
-                document.querySelector('#checkoutModal .btn-primary').innerHTML = 'Place Order <i class="fas fa-rocket"></i>';
-                showOrders();
-            } catch (e) {
-                showToast(e.message, 'error');
-            }
-        };
-
-        window.showOrders = () => {
-            document.getElementById('ordersModal').classList.add('active');
-            onValue(ref(db, 'orders'), snap => {
-                const list = document.getElementById('orderList');
-                const myOrders = [];
-                snap.forEach(c => {
-                    if(c.val().userId === currentUser?.uid) myOrders.push({id: c.key, ...c.val()});
-                });
-                
-                myOrders.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-                
-                if(myOrders.length === 0) return list.innerHTML = '<p>No orders yet.</p>';
-
-                list.innerHTML = myOrders.map(o => {
-                    const colors = { Placed: 'orange', Accepted: '#2196F3', Preparing: 'purple', Delivered: 'green', Rejected: 'red' };
-                    return `
-                    <div style="border:1px solid #eee; border-radius:12px; padding:15px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <strong>Order #${o.id.substring(1,7).toUpperCase()}</strong>
-                            <span style="background:${colors[o.status]||'grey'}; color:white; padding:2px 8px; border-radius:12px; font-size:0.8rem;">${o.status}</span>
+            list.innerHTML = Object.entries(orders).reverse().map(([id, o]) => `
+                <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between">
+                        <strong>#${id.slice(-6)}</strong>
+                        <span>₹${(o.charges?.total || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <p>${o.status || 'Placed'}</p>
+                    <button onclick="trackOrder('${id}')" style="background:var(--crimson);color:white;border:none;padding:8px 16px;border-radius:20px;margin-top:8px">Track</button>
+                </div>
+            `).join('');
+            
+            document.getElementById('history-modal').style.display = 'flex';
+        });
+    }
+    
+    window.trackOrder = id => {
+        trackingOrderId = id;
+        document.getElementById('tracking-order-id').textContent = id.slice(-6);
+        
+        db.ref(`orders/${id}`).on('value', snap => {
+            const o = snap.val();
+            if (!o) return;
+            
+            const steps = ['Placed', 'Confirmed', 'Preparing', 'Ready', 'OutForDelivery', 'Delivered'];
+            const currentIdx = steps.indexOf(o.status);
+            
+            document.getElementById('tracking-progress').innerHTML = `
+                <div class="progress-track">
+                    ${steps.map((s, i) => `
+                        <div class="progress-step ${i <= currentIdx ? 'active' : ''}">
+                            <i class="fa-solid fa-${i===0?'check':i===1?'check-double':i===2?'fire':i===3?'box':i===4?'truck':'flag-checkered'}"></i>
+                            ${s}
                         </div>
-                        <p style="font-size:0.9rem; color:#666;">Total: ₹${o.total} | ${o.paymentMethod}</p>
-                        ${o.rejectionReason ? `<p style="color:red; font-size:0.8rem; margin-top:5px;">Reason: ${o.rejectionReason}</p>` : ''}
-                    </div>`;
-                }).join('');
-            });
-        };
-
-        window.showToast = (msg, type='info') => {
-            const box = document.getElementById('toastBox');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle', warning: 'exclamation-triangle' };
-            toast.innerHTML = `<i class="fas fa-${icons[type]}"></i> ${msg}`;
-            box.appendChild(toast);
-            setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); }, 3000);
-        };
-    </script>
+                    `).join('')}
+                </div>
+            `;
+            
+            if (o.deliveryPartner) {
+                document.getElementById('delivery-partner-card').innerHTML = `
+                    <strong>${o.deliveryPartner.name}</strong> · ⭐ ${o.deliveryPartner.rating || '4.5'}<br>
+                    📞 ${o.deliveryPartner.phone}<br>
+                    🛵 ${o.deliveryPartner.vehicle || 'Bike'}
+                `;
+            }
+            
+            if (o.status === 'OutForDelivery' && o.deliveryPartner?.currentLocation) {
+                setTimeout(() => initTrackingMap(o.deliveryPartner.currentLocation), 100);
+            }
+        });
+        
+        closeHistoryModal();
+        document.getElementById('tracking-modal').style.display = 'flex';
+    };
+    
+    function initTrackingMap(partnerLoc) {
+        if (trackingMap) { trackingMap.remove(); trackingMap = null; }
+        const mapDiv = document.getElementById('tracking-map');
+        trackingMap = L.map(mapDiv).setView([RESTAURANT.lat, RESTAURANT.lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackingMap);
+        L.marker([RESTAURANT.lat, RESTAURANT.lng]).addTo(trackingMap).bindPopup('Restaurant');
+        if (userLocation) L.marker([userLocation.lat, userLocation.lng]).addTo(trackingMap).bindPopup('You');
+        if (partnerLoc) L.marker([partnerLoc.lat, partnerLoc.lng]).addTo(trackingMap).bindPopup('Delivery Partner');
+    }
+    
+    window.callDeliveryPartner = () => {
+        db.ref(`orders/${trackingOrderId}/deliveryPartner`).once('value', snap => {
+            const p = snap.val();
+            if (p?.phone) window.location.href = `tel:${p.phone}`;
+            else showToast('No partner assigned', true);
+        });
+    };
+    
+    window.closeTrackingModal = () => document.getElementById('tracking-modal').style.display = 'none';
+    window.closeHistoryModal = () => document.getElementById('history-modal').style.display = 'none';
+    
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; }));
+    
+    // START
+    checkLocation();
+</script>
 </body>
 </html>
