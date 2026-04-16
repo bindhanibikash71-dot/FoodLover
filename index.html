@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#e53935">
+    <title>Ramyasri Food & Beverage | Premium Delivery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { brand: '#e53935', brandDark: '#b71c1c', gold: '#FFD700', darkBg: '#121212' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Enterprise Design System */
+        :root { --glass-bg: rgba(255, 255, 255, 0.7); --glass-border: rgba(255, 255, 255, 0.3); }
+        .dark { --glass-bg: rgba(30, 30, 30, 0.7); --glass-border: rgba(255, 255, 255, 0.1); }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fa; scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+        .dark body { background: #121212; color: #ffffff; }
+        
+        .glass {
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+        }
+        .neumorph {
+            background: #ffffff; box-shadow: 5px 5px 10px #e6e6e6, -5px -5px 10px #ffffff; border-radius: 16px;
+        }
+        .dark .neumorph { background: #1e1e1e; box-shadow: 5px 5px 10px #151515, -5px -5px 10px #272727; }
+        
+        /* Animations */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000; }
+        .toast.show { bottom: 20px; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e53935; border-radius: 10px; }
+        
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: 0.5s; }
+        .dark #loader { background: #121212; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #e53935; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 transition-colors duration-300">
+
+    <!-- Global Loader -->
+    <div id="loader"><div class="spinner"></div></div>
+
+    <!-- Location Restrict Modal -->
+    <div id="locationModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-md w-full text-center scale-95 transform transition-transform duration-300" id="locModalContent">
+            <div class="w-20 h-20 bg-red-100 text-brand rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Location Required</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6 text-sm">We currently deliver within a 10km radius of our kitchen. Please allow location access to verify serviceability.</p>
+            <button onclick="requestLocation()" class="w-full bg-brand text-white py-3 rounded-xl font-semibold shadow-lg shadow-brand/30 hover:bg-brandDark transition active:scale-95">
+                <i class="fa-solid fa-location-crosshairs mr-2"></i> Detect My Location
+            </button>
+            <p id="locError" class="text-red-500 text-sm mt-4 hidden"></p>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full glass z-40 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand text-white rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-brand/40">R</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Ramyasri Food</h1>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 flex items-center" id="userLocationText">
+                        <i class="fa-solid fa-location-dot text-brand mr-1"></i> Checking location...
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300 hover:text-brand transition"><i class="fa-solid fa-moon text-xl"></i></button>
+                <div class="relative cursor-pointer" onclick="toggleCart()">
+                    <i class="fa-solid fa-bag-shopping text-2xl text-gray-700 dark:text-gray-200"></i>
+                    <span id="cartBadge" class="absolute -top-1 -right-2 bg-brand text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">0</span>
+                </div>
+                <button onclick="handleAuthClick()" class="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" id="authBtnDesk">
+                    <i class="fa-regular fa-user"></i> <span id="authTextDesk">Sign In</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 pt-24 pb-32">
+        <!-- Hero Section -->
+        <div class="relative rounded-3xl overflow-hidden mb-10 bg-brand shadow-2xl shadow-brand/20 animate-fade-up">
+            <div class="absolute inset-0 bg-gradient-to-r from-brandDark to-transparent opacity-90"></div>
+            <div class="relative p-8 md:p-12 flex flex-col md:flex-row items-center justify-between">
+                <div class="text-white z-10 max-w-xl">
+                    <span class="bg-gold text-brandDark text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4 inline-block">Premium Quality</span>
+                    <h2 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Exquisite Flavors,<br>Delivered Fast.</h2>
+                    <p class="text-brand-100 mb-6 text-sm md:text-base opacity-90">Experience enterprise-grade dining at home. Freshly prepared, securely packed, and tracked in real-time.</p>
+                    <div class="flex bg-white/20 backdrop-blur-md rounded-full p-1 border border-white/30">
+                        <i class="fa-solid fa-search text-white p-3"></i>
+                        <input type="text" id="searchInput" placeholder="Search for Biryani, Pizza..." class="bg-transparent border-none text-white placeholder-white/70 w-full focus:outline-none focus:ring-0">
+                        <button class="bg-white text-brand px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Search</button>
+                    </div>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/3274/3274099.png" alt="Food" class="w-48 md:w-72 mt-8 md:mt-0 drop-shadow-2xl floating z-10 mix-blend-luminosity opacity-80">
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="mb-8 animate-fade-up" style="animation-delay: 0.1s;">
+            <div class="flex justify-between items-end mb-4">
+                <h3 class="text-xl font-bold dark:text-white">Explore Menu</h3>
+            </div>
+            <div class="flex gap-4 overflow-x-auto hide-scroll pb-2" id="categoryList">
+                <button class="px-6 py-2 rounded-full bg-brand text-white shadow-md shadow-brand/30 whitespace-nowrap font-medium text-sm">All</button>
+                <button class="px-6 py-2 rounded-full glass whitespace-nowrap font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition">Starters</button>
+                <button class="px-6 py-2 rounded-full glass whitespace-nowrap font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition">Main Course</button>
+                <button class="px-6 py-2 rounded-full glass whitespace-nowrap font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition">Beverages</button>
+                <button class="px-6 py-2 rounded-full glass whitespace-nowrap font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition">Desserts</button>
+            </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="menuGrid">
+            <!-- Items injected by JS -->
+        </div>
+    </main>
+
+    <!-- Bottom Mobile Nav -->
+    <div class="md:hidden fixed bottom-0 w-full glass z-40 border-t border-gray-200 dark:border-gray-800 pb-safe">
+        <div class="flex justify-around items-center p-3">
+            <button class="flex flex-col items-center text-brand"><i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-medium">Home</span></button>
+            <button class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-brand transition"><i class="fa-solid fa-heart text-xl mb-1"></i><span class="text-[10px] font-medium">Saved</span></button>
+            <button class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-brand transition relative" onclick="toggleCart()">
+                <i class="fa-solid fa-receipt text-xl mb-1"></i><span class="text-[10px] font-medium">Orders</span>
+            </button>
+            <button class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-brand transition" onclick="handleAuthClick()"><i class="fa-solid fa-user text-xl mb-1"></i><span class="text-[10px] font-medium" id="authTextMob">Profile</span></button>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar Overlay -->
+    <div id="cartOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] hidden opacity-0 transition-opacity duration-300" onclick="toggleCart()"></div>
+    
+    <!-- Cart Sidebar -->
+    <div id="cartSidebar" class="fixed top-0 right-0 h-full w-full md:w-[400px] bg-white dark:bg-darkBg z-[200] transform translate-x-full transition-transform duration-300 shadow-2xl flex flex-col">
+        <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center glass sticky top-0 z-10">
+            <h2 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-bag-shopping text-brand"></i> Your Cart</h2>
+            <button onclick="toggleCart()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-4" id="cartItems">
+            <!-- Empty state default -->
+            <div class="flex flex-col items-center justify-center h-full text-gray-400 opacity-60">
+                <i class="fa-solid fa-basket-shopping text-6xl mb-4"></i>
+                <p>Your cart is empty</p>
+            </div>
+        </div>
+
+        <div class="p-4 glass border-t border-gray-100 dark:border-gray-800">
+            <div class="space-y-2 mb-4 text-sm">
+                <div class="flex justify-between"><span class="text-gray-500">Item Total</span><span class="font-medium" id="cartSubtotal">₹0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Delivery Fee (10km radius)</span><span class="font-medium text-green-500" id="cartDelivery">Free</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">GST & Taxes (5%)</span><span class="font-medium" id="cartTax">₹0.00</span></div>
+                <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700 font-bold text-lg"><span class="text-gray-800 dark:text-white">Grand Total</span><span class="text-brand" id="cartTotal">₹0.00</span></div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl mb-4 border border-blue-100 dark:border-blue-800 flex gap-3">
+                <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                <p class="text-[11px] text-blue-700 dark:text-blue-300">Payments are processed securely. Direct UPI Payment to Owner (8341312204@ybl) is available at checkout.</p>
+            </div>
+
+            <button onclick="processCheckout()" class="w-full bg-brand text-white py-3.5 rounded-xl font-bold shadow-lg shadow-brand/30 flex justify-between items-center px-6 hover:bg-brandDark transition active:scale-[0.98]">
+                <span>Checkout</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast glass rounded-full px-6 py-3 flex items-center gap-3 shadow-xl">
+        <i class="fa-solid fa-circle-check text-green-500"></i>
+        <span id="toastMsg" class="font-medium text-sm dark:text-white">Success!</span>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBaDnV72Z0VKqLOHTqN2ScisOSITOHbdo0",
+            authDomain: "myfood-7ebe7.firebaseapp.com",
+            databaseURL: "https://myfood-7ebe7-default-rtdb.firebaseio.com",
+            projectId: "myfood-7ebe7",
+            storageBucket: "myfood-7ebe7.firebasestorage.app",
+            messagingSenderId: "144461701384",
+            appId: "1:144461701384:web:dbaa97b526d1f938f28cbd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // --- CONSTANTS & STATE ---
+        const RESTAURANT_LAT = 17.442120;
+        const RESTAURANT_LNG = 78.377530;
+        const MAX_DISTANCE_KM = 10;
+        
+        let currentUser = null;
+        let cart = JSON.parse(localStorage.getItem('ramyasri_cart')) ||[];
+        let isLocationVerified = false;
+        let menuItems =[];
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            setTimeout(() => document.getElementById('loader').style.opacity = '0', 500);
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            
+            // Check auth state
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                const authTextDesk = document.getElementById('authTextDesk');
+                const authTextMob = document.getElementById('authTextMob');
+                if(user) {
+                    authTextDesk.innerText = user.displayName.split(' ')[0];
+                    authTextMob.innerText = 'Profile';
+                } else {
+                    authTextDesk.innerText = 'Sign In';
+                    authTextMob.innerText = 'Sign In';
+                }
+            });
+
+            // Initial UI Update
+            updateCartUI();
+            checkSavedLocation();
+            fetchMenu();
+        };
+
+        // --- DARK MODE ---
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // --- LOCATION SYSTEM (HAVERSINE) ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function checkSavedLocation() {
+            const loc = localStorage.getItem('user_loc');
+            if(loc) {
+                const {lat, lng} = JSON.parse(loc);
+                verifyLocationAccess(lat, lng);
+            } else {
+                document.getElementById('locationModal').classList.remove('hidden');
+                document.getElementById('locationModal').classList.add('flex');
+            }
+        }
+
+        function requestLocation() {
+            const btn = document.querySelector('#locationModal button');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Locating...';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => verifyLocationAccess(pos.coords.latitude, pos.coords.longitude),
+                    (err) => {
+                        document.getElementById('locError').innerText = "Location permission denied. Cannot proceed.";
+                        document.getElementById('locError').classList.remove('hidden');
+                        btn.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-2"></i> Try Again';
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                document.getElementById('locError').innerText = "Geolocation not supported.";
+                document.getElementById('locError').classList.remove('hidden');
+            }
+        }
+
+        function verifyLocationAccess(lat, lng) {
+            const distance = calculateDistance(RESTAURANT_LAT, RESTAURANT_LNG, lat, lng);
+            
+            if(distance <= MAX_DISTANCE_KM) {
+                isLocationVerified = true;
+                localStorage.setItem('user_loc', JSON.stringify({lat, lng}));
+                
+                // Reverse geocoding mock (Enterprise level would use Google Maps API here)
+                document.getElementById('userLocationText').innerHTML = `<i class="fa-solid fa-circle-check text-green-500 mr-1"></i> Servicable Zone (~${distance.toFixed(1)}km)`;
+                
+                // Hide modal
+                document.getElementById('locModalContent').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    document.getElementById('locationModal').classList.add('hidden');
+                    document.getElementById('locationModal').classList.remove('flex');
+                    showToast("Location verified. You're within delivery range!");
+                }, 300);
+            } else {
+                document.getElementById('locError').innerHTML = `<b>Out of range!</b> You are ${distance.toFixed(1)}km away. Max delivery radius is 10km.`;
+                document.getElementById('locError').classList.remove('hidden');
+                document.querySelector('#locationModal button').innerHTML = '<i class="fa-solid fa-location-crosshairs mr-2"></i> Update Location';
+            }
+        }
+
+        // --- MENU SYSTEM ---
+        Object.keys(counts).forEach(k => document.getElementById(`cnt${k}`).innerText = counts[k]);
+                    document.getElementById('newOrderCount').innerText = counts.Placed;
+                    
+                    document.getElementById('dashOrders').innerText = ordersData.length;
+                    document.getElementById('dashRev').innerText = `₹${todayRev.toFixed(2)}`;
+                    let aov = ordersData.length > 0 ? todayRev / ordersData.length : 0;
+                    document.getElementById('dashAOV').innerText = `₹${aov.toFixed(2)}`;
+                    
+                    updateCharts(counts);
+                }
+            });
+        }
+
+        function renderOrderCard(order) {
+            const col = document.getElementById(`kb-${order.status}`);
+            const div = document.createElement('div');
+            div.className = "order-card text-sm";
+            
+            let btnHtml = '';
+            if(order.status === 'Placed') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Preparing')" class="mt-3 w-full bg-orange-100 text-orange-700 py-1.5 rounded text-xs font-bold hover:bg-orange-200">Start Prep</button>`;
+            else if(order.status === 'Preparing') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Ready')" class="mt-3 w-full bg-blue-100 text-blue-700 py-1.5 rounded text-xs font-bold hover:bg-blue-200">Mark Ready</button>`;
+            else if(order.status === 'Ready') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="mt-3 w-full bg-green-100 text-green-700 py-1.5 rounded text-xs font-bold hover:bg-green-200">Delivered</button>`;
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-bold text-slate-800">#${order.id.slice(-5).toUpperCase()}</span>
+                    <span class="text-xs font-bold text-red-600">₹${order.charges.total.toFixed(2)}</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-user mr-1"></i> ${order.customerInfo.name}</p>
+                <div class="border-t border-slate-100 pt-2 text-[11px] text-slate-600">
+                    ${order.items.map(i => `<div>${i.qty}x ${i.name}</div>`).join('')}
+                </div>
+                ${btnHtml}
+            `;
+            col.appendChild(div);
+        }
+
+        function updateOrderStatus(id, newStatus) {
+            db.ref(`orders/${id}`).update({ status: newStatus });
+        }
+
+        // Menu Management
+        function listenMenu() {
+            db.ref('menu/items').on('value', snap => {
+                const data = snap.val();
+                const tbody = document.getElementById('menuTableBody');
+                tbody.innerHTML = '';
+                if(data) {
+                    Object.keys(data).forEach(key => {
+                        const item = data[key];
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 flex items-center gap-3">
+                                    <img src="${item.image || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-lg object-cover">
+                                    <span class="font-medium text-slate-800">${item.name}</span>
+                                </td>
+                                <td class="px-6 py-4">${item.category || 'N/A'}</td>
+                                <td class="px-6 py-4 font-bold">₹${item.price}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-[10px] rounded-full font-bold ${item.isVeg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${item.isVeg ? 'VEG' : 'NON-VEG'}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button onclick="deleteItem('${key}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+        }
+
+        document.getElementById('menuForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerText = "Saving...";
+            
+            const newItem = {
+                name: document.getElementById('mName').value,
+                price: parseFloat(document.getElementById('mPrice').value),
+                category: document.getElementById('mCat').value,
+                image: document.getElementById('mImg').value || null,
+                isVeg: document.getElementById('mVeg').checked
+            };
+
+            db.ref('menu/items').push(newItem).then(() => {
+                document.getElementById('addMenuModal').classList.add('hidden');
+                e.target.reset();
+                btn.innerText = "Save Item";
+            });
+        });
+
+        function deleteItem(id) {
+            if(confirm("Delete this menu item?")) db.ref(`menu/items/${id}`).remove();
+        }
+
+        // Charts Initialization (Chart.js)
+        function initCharts() {
+            const ctxRev = document.getElementById('revChart').getContext('2d');
+            chartInstanceRev = new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels:['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets:[{
+                        label: 'Revenue (₹)',
+                        data:[12000, 19000, 15000, 22000, 18000, 32000, 28000], // Mock historical
+                        borderColor: '#e53935',
+                        backgroundColor: 'rgba(229, 57, 53, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxStat = document.getElementById('statusChart').getContext('2d');
+            chartInstanceStat = new Chart(ctxStat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Placed', 'Preparing', 'Ready', 'Delivered'],
+                    datasets:[{
+                        data: [0, 0, 0, 0],
+                        backgroundColor:['#ef4444', '#f97316', '#3b82f6', '#22c55e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+            });
+        }
+
+        function updateCharts(counts) {
+            if(chartInstanceStat) {
+                chartInstanceStat.data.datasets[0].data = [counts.Placed, counts.Preparing, counts.Ready, counts.Delivered];
+                chartInstanceStat.update();
+            }
+        }
+    </script>
+</body>
+</html>
