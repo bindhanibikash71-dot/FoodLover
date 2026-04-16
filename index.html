@@ -326,140 +326,227 @@
         }
 
         // --- MENU SYSTEM ---
-        Object.keys(counts).forEach(k => document.getElementById(`cnt${k}`).innerText = counts[k]);
-                    document.getElementById('newOrderCount').innerText = counts.Placed;
-                    
-                    document.getElementById('dashOrders').innerText = ordersData.length;
-                    document.getElementById('dashRev').innerText = `₹${todayRev.toFixed(2)}`;
-                    let aov = ordersData.length > 0 ? todayRev / ordersData.length : 0;
-                    document.getElementById('dashAOV').innerText = `₹${aov.toFixed(2)}`;
-                    
-                    updateCharts(counts);
+        function fetchMenu() {
+            db.ref('menu/items').on('value', (snapshot) => {
+                const data = snapshot.val();
+                menuItems =[];
+                const grid = document.getElementById('menuGrid');
+                grid.innerHTML = '';
+                
+                if(!data) {
+                    // Seed dummy data for demo if empty
+                    seedDummyMenu();
+                    return;
                 }
+
+                Object.keys(data).forEach(key => {
+                    const item = data[key];
+                    item.id = key;
+                    menuItems.push(item);
+                    
+                    const card = document.createElement('div');
+                    card.className = "neumorph overflow-hidden animate-fade-up relative group";
+                    card.innerHTML = `
+                        ${item.isVeg ? '<div class="absolute top-3 left-3 bg-white p-1 rounded shadow z-10"><div class="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div class="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>' : '<div class="absolute top-3 left-3 bg-white p-1 rounded shadow z-10"><div class="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div class="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>'}
+                        <div class="absolute top-3 right-3 bg-white/80 backdrop-blur text-xs font-bold px-2 py-1 rounded-md shadow z-10">
+                            <i class="fa-solid fa-star text-gold"></i> ${item.rating || '4.5'}
+                        </div>
+                        <div class="h-48 overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <img src="${item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500'}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="${item.name}">
+                        </div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-lg dark:text-white leading-tight pr-2">${item.name}</h4>
+                                <span class="font-bold text-brand">₹${item.price}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">${item.description || 'Premium ingredients, cooked to perfection.'}</p>
+                            <div class="flex items-center justify-between mt-auto">
+                                <span class="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"><i class="fa-regular fa-clock"></i> ~${item.prepTime || 20} mins</span>
+                                <button onclick="addToCart('${item.id}')" class="bg-brand/10 text-brand hover:bg-brand hover:text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm active:scale-95">Add +</button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
             });
         }
 
-        function renderOrderCard(order) {
-            const col = document.getElementById(`kb-${order.status}`);
-            const div = document.createElement('div');
-            div.className = "order-card text-sm";
+        // --- CART SYSTEM ---
+        function toggleCart() {
+            const sidebar = document.getElementById('cartSidebar');
+            const overlay = document.getElementById('cartOverlay');
             
-            let btnHtml = '';
-            if(order.status === 'Placed') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Preparing')" class="mt-3 w-full bg-orange-100 text-orange-700 py-1.5 rounded text-xs font-bold hover:bg-orange-200">Start Prep</button>`;
-            else if(order.status === 'Preparing') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Ready')" class="mt-3 w-full bg-blue-100 text-blue-700 py-1.5 rounded text-xs font-bold hover:bg-blue-200">Mark Ready</button>`;
-            else if(order.status === 'Ready') btnHtml = `<button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="mt-3 w-full bg-green-100 text-green-700 py-1.5 rounded text-xs font-bold hover:bg-green-200">Delivered</button>`;
-
-            div.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="font-bold text-slate-800">#${order.id.slice(-5).toUpperCase()}</span>
-                    <span class="text-xs font-bold text-red-600">₹${order.charges.total.toFixed(2)}</span>
-                </div>
-                <p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-user mr-1"></i> ${order.customerInfo.name}</p>
-                <div class="border-t border-slate-100 pt-2 text-[11px] text-slate-600">
-                    ${order.items.map(i => `<div>${i.qty}x ${i.name}</div>`).join('')}
-                </div>
-                ${btnHtml}
-            `;
-            col.appendChild(div);
+            if(sidebar.classList.contains('translate-x-full')) {
+                sidebar.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.add('translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+                document.body.style.overflow = 'auto';
+            }
         }
 
-        function updateOrderStatus(id, newStatus) {
-            db.ref(`orders/${id}`).update({ status: newStatus });
+        function addToCart(id) {
+            const item = menuItems.find(i => i.id === id);
+            if(!item) return;
+
+            const existing = cart.find(i => i.id === id);
+            if(existing) existing.qty += 1;
+            else cart.push({ ...item, qty: 1 });
+
+            saveCart();
+            updateCartUI();
+            showToast(`${item.name} added to cart`);
+            
+            // Pulse animation on cart icon
+            const badge = document.getElementById('cartBadge');
+            badge.classList.add('scale-150');
+            setTimeout(() => badge.classList.remove('scale-150'), 200);
         }
 
-        // Menu Management
-        function listenMenu() {
-            db.ref('menu/items').on('value', snap => {
-                const data = snap.val();
-                const tbody = document.getElementById('menuTableBody');
-                tbody.innerHTML = '';
-                if(data) {
-                    Object.keys(data).forEach(key => {
-                        const item = data[key];
-                        tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 flex items-center gap-3">
-                                    <img src="${item.image || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-lg object-cover">
-                                    <span class="font-medium text-slate-800">${item.name}</span>
-                                </td>
-                                <td class="px-6 py-4">${item.category || 'N/A'}</td>
-                                <td class="px-6 py-4 font-bold">₹${item.price}</td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-[10px] rounded-full font-bold ${item.isVeg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${item.isVeg ? 'VEG' : 'NON-VEG'}</span>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button onclick="deleteItem('${key}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `;
+        function updateCartQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if(item) {
+                item.qty += delta;
+                if(item.qty <= 0) cart = cart.filter(i => i.id !== id);
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('ramyasri_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cartItems');
+            const badge = document.getElementById('cartBadge');
+            
+            let totalQty = 0;
+            let subtotal = 0;
+
+            if(cart.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400 opacity-60"><i class="fa-solid fa-basket-shopping text-6xl mb-4"></i><p>Your cart is empty</p></div>`;
+            } else {
+                container.innerHTML = '';
+                cart.forEach(item => {
+                    totalQty += item.qty;
+                    subtotal += (item.price * item.qty);
+                    
+                    container.innerHTML += `
+                        <div class="flex gap-3 mb-4 p-3 glass rounded-xl">
+                            <img src="${item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100'}" class="w-16 h-16 rounded-lg object-cover">
+                            <div class="flex-1">
+                                <h5 class="text-sm font-bold dark:text-white line-clamp-1">${item.name}</h5>
+                                <div class="text-brand font-bold text-sm mb-2">₹${item.price}</div>
+                                <div class="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 w-fit rounded-lg px-2 py-1">
+                                    <button onclick="updateCartQty('${item.id}', -1)" class="text-gray-500 hover:text-brand px-1"><i class="fa-solid fa-minus text-xs"></i></button>
+                                    <span class="text-xs font-bold w-4 text-center dark:text-white">${item.qty}</span>
+                                    <button onclick="updateCartQty('${item.id}', 1)" class="text-gray-500 hover:text-brand px-1"><i class="fa-solid fa-plus text-xs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            badge.innerText = totalQty;
+            
+            const tax = subtotal * 0.05; // 5% GST
+            const total = subtotal + tax;
+
+            document.getElementById('cartSubtotal').innerText = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('cartTax').innerText = `₹${tax.toFixed(2)}`;
+            document.getElementById('cartTotal').innerText = `₹${total.toFixed(2)}`;
+        }
+
+        // --- AUTH & CHECKOUT ---
+        function handleAuthClick() {
+            if(!currentUser) {
+                auth.signInWithPopup(googleProvider).then((res) => {
+                    showToast(`Welcome, ${res.user.displayName}`);
+                    // Save user to DB
+                    db.ref('users/' + res.user.uid).update({
+                        name: res.user.displayName,
+                        email: res.user.email,
+                        lastLogin: firebase.database.ServerValue.TIMESTAMP
                     });
+                }).catch(err => alert(err.message));
+            } else {
+                if(confirm("Do you want to logout?")) {
+                    auth.signOut();
+                    showToast("Logged out successfully");
                 }
-            });
+            }
         }
 
-        document.getElementById('menuForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.innerText = "Saving...";
+        function processCheckout() {
+            if(cart.length === 0) return showToast("Cart is empty!");
+            if(!isLocationVerified) return document.getElementById('locationModal').classList.remove('hidden');
+            if(!currentUser) return handleAuthClick(); // Force login
+
+            const btn = document.querySelector('#cartSidebar button');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
             
-            const newItem = {
-                name: document.getElementById('mName').value,
-                price: parseFloat(document.getElementById('mPrice').value),
-                category: document.getElementById('mCat').value,
-                image: document.getElementById('mImg').value || null,
-                isVeg: document.getElementById('mVeg').checked
+            const loc = JSON.parse(localStorage.getItem('user_loc'));
+            let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            let tax = subtotal * 0.05;
+            let total = subtotal + tax;
+
+            const orderData = {
+                userId: currentUser.uid,
+                customerInfo: { name: currentUser.displayName, email: currentUser.email, phone: '+91' }, // Phone mock
+                items: cart,
+                charges: { subtotal, tax, delivery: 0, total },
+                location: { lat: loc.lat, lng: loc.lng },
+                status: 'Placed',
+                paymentStatus: 'Pending_UPI',
+                timestamps: { placed: firebase.database.ServerValue.TIMESTAMP }
             };
 
-            db.ref('menu/items').push(newItem).then(() => {
-                document.getElementById('addMenuModal').classList.add('hidden');
-                e.target.reset();
-                btn.innerText = "Save Item";
-            });
-        });
-
-        function deleteItem(id) {
-            if(confirm("Delete this menu item?")) db.ref(`menu/items/${id}`).remove();
-        }
-
-        // Charts Initialization (Chart.js)
-        function initCharts() {
-            const ctxRev = document.getElementById('revChart').getContext('2d');
-            chartInstanceRev = new Chart(ctxRev, {
-                type: 'line',
-                data: {
-                    labels:['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets:[{
-                        label: 'Revenue (₹)',
-                        data:[12000, 19000, 15000, 22000, 18000, 32000, 28000], // Mock historical
-                        borderColor: '#e53935',
-                        backgroundColor: 'rgba(229, 57, 53, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            const ctxStat = document.getElementById('statusChart').getContext('2d');
-            chartInstanceStat = new Chart(ctxStat, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Placed', 'Preparing', 'Ready', 'Delivered'],
-                    datasets:[{
-                        data: [0, 0, 0, 0],
-                        backgroundColor:['#ef4444', '#f97316', '#3b82f6', '#22c55e'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+            // Push to Firebase
+            const newOrderRef = db.ref('orders').push();
+            newOrderRef.set(orderData).then(() => {
+                cart =[];
+                saveCart();
+                updateCartUI();
+                toggleCart();
+                
+                // Open UPI Intent (Enterprise feature)
+                const upiLink = `upi://pay?pa=8341312204@ybl&pn=RAMYASRI%20FOOD&am=${total.toFixed(2)}&tr=${newOrderRef.key}&cu=INR`;
+                
+                showToast("Order Placed Successfully!");
+                
+                setTimeout(() => {
+                    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                        window.location.href = upiLink;
+                    } else {
+                        alert(`Order Placed! Order ID: ${newOrderRef.key}\nPlease pay ₹${total.toFixed(2)} to UPI: 8341312204@ybl`);
+                    }
+                }, 1500);
             });
         }
 
-        function updateCharts(counts) {
-            if(chartInstanceStat) {
-                chartInstanceStat.data.datasets[0].data = [counts.Placed, counts.Preparing, counts.Ready, counts.Delivered];
-                chartInstanceStat.update();
-            }
+        // --- UTILS ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Dummy data seeder if DB is empty
+        function seedDummyMenu() {
+            const items =[
+                { name: "Hyderabadi Chicken Dum Biryani", price: 350, isVeg: false, prepTime: 30, image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500", category: "Main" },
+                { name: "Paneer Butter Masala", price: 280, isVeg: true, prepTime: 25, image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc3?w=500", category: "Main" },
+                { name: "Tandoori Chicken (Half)", price: 320, isVeg: false, prepTime: 20, image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=500", category: "Starters" },
+                { name: "Crispy Corn", price: 190, isVeg: true, prepTime: 15, image: "https://images.unsplash.com/photo-1626804475297-41609ea084eb?w=500", category: "Starters" }
+            ];
+            items.forEach(item => db.ref('menu/items').push(item));
         }
     </script>
 </body>
